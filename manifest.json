@@ -1,0 +1,19 @@
+{
+  "name": "Track My Taka | ট্র্যাক মাই টাকা",
+  "short_name": "Track My Taka",
+  "description": "Personal Daily & Monthly Taka Ledger",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070B09",
+  "theme_color": "#047857",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
