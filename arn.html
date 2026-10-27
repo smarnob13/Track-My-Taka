@@ -1,0 +1,1878 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track My Taka | ট্র্যাক মাই টাকা — Personal Financial Tracker</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Baloo Da 2 (Supports both Latin/English & Bengali scripts natively) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        baloo: ['"Baloo Da 2"', 'cursive', 'sans-serif'],
+                    },
+                    colors: {
+                        creme: {
+                            50: '#FDFBF7',
+                            100: '#F7F3E8',
+                            200: '#EFE8D5',
+                            300: '#E2D6B8',
+                        },
+                        emeraldBrand: {
+                            950: '#081C15',
+                            900: '#1B4332',
+                            800: '#2D6A4F',
+                            700: '#40916C',
+                            600: '#52B788',
+                            400: '#74C69D',
+                            300: '#95D5B2',
+                            200: '#B7E4C7',
+                            100: '#D8F3DC',
+                        },
+                        obsidian: {
+                            950: '#070A09',
+                            900: '#0D1311',
+                            800: '#141E1B',
+                            700: '#1D2C27',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * {
+            font-family: 'Baloo Da 2', sans-serif;
+        }
+
+        body {
+            transition: background-color 0.35s ease, color 0.35s ease;
+        }
+
+        /* Light Mode: Warm Creme & Deep Emerald Green */
+        html.light body {
+            background-color: #FDFBF7;
+            color: #1B4332;
+        }
+
+        /* Dark Mode: Rich Obsidian Black & Luminous Light Green */
+        html.dark body {
+            background-color: #070A09;
+            color: #D8F3DC;
+        }
+
+        .glass-card-light {
+            background: rgba(255, 253, 248, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(45, 106, 79, 0.16);
+            box-shadow: 0 12px 32px -8px rgba(27, 67, 50, 0.08);
+        }
+
+        html.dark .glass-card-light {
+            background: rgba(20, 30, 27, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(116, 198, 157, 0.22);
+            box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.65);
+        }
+
+        .card-surface {
+            transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .card-surface:hover {
+            transform: translateY(-4px);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        html.light ::-webkit-scrollbar-track {
+            background: #F7F3E8;
+        }
+        html.light ::-webkit-scrollbar-thumb {
+            background: #40916C;
+            border-radius: 9999px;
+        }
+        html.dark ::-webkit-scrollbar-track {
+            background: #0D1311;
+        }
+        html.dark ::-webkit-scrollbar-thumb {
+            background: #52B788;
+            border-radius: 9999px;
+        }
+
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float {
+            animation: floatSlow 5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emeraldBrand-600 selection:text-white">
+
+    <!-- STICKY TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-40 border-b border-emeraldBrand-800/15 dark:border-emeraldBrand-400/15 bg-creme-50/90 dark:bg-obsidian-950/90 backdrop-blur-md transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-3">
+            
+            <!-- Left: Brand Identity -->
+            <div onclick="app.navigate('home')" class="flex items-center gap-3 cursor-pointer group">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emeraldBrand-900 to-emeraldBrand-700 dark:from-emeraldBrand-600 dark:to-emeraldBrand-400 flex items-center justify-center text-creme-50 dark:text-obsidian-950 font-extrabold text-2xl shadow-lg group-hover:scale-105 transition-transform">
+                    ৳
+                </div>
+                <div>
+                    <span id="nav-brand-title" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-emeraldBrand-900 dark:text-emeraldBrand-300 block leading-none">
+                        Track My Taka
+                    </span>
+                    <span id="nav-brand-subtitle" class="text-xs font-medium text-emeraldBrand-700 dark:text-emeraldBrand-400/80 block mt-0.5">
+                        Smart Daily Taka Ledger
+                    </span>
+                </div>
+            </div>
+
+            <!-- Right: Mode, Language, User & GitHub/Vercel Guide Controls -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                
+                <!-- GitHub + Vercel Setup Guide Button -->
+                <button onclick="app.toggleGuideModal(true)" class="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold bg-creme-200/80 dark:bg-obsidian-800 text-emeraldBrand-900 dark:text-emeraldBrand-300 hover:bg-emeraldBrand-900 hover:text-creme-50 dark:hover:bg-emeraldBrand-400 dark:hover:text-obsidian-950 transition-all border border-emeraldBrand-800/15 dark:border-emeraldBrand-400/20" title="Vercel & GitHub Deployment Guide">
+                    <i data-lucide="rocket" class="w-4 h-4"></i>
+                    <span data-i18n="deployGuideBtn">Vercel & GitHub Guide</span>
+                </button>
+
+                <!-- Language Toggle (English / বাংলা) -->
+                <button onclick="app.toggleLanguage()" id="lang-toggle-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold bg-creme-100 dark:bg-obsidian-800 text-emeraldBrand-900 dark:text-emeraldBrand-300 border border-emeraldBrand-800/20 dark:border-emeraldBrand-400/25 hover:scale-105 active:scale-95 transition-all shadow-sm" title="Switch Language (English / বাংলা)">
+                    <i data-lucide="languages" class="w-4 h-4 text-emeraldBrand-700 dark:text-emeraldBrand-400"></i>
+                    <span id="lang-toggle-label">বাংলা</span>
+                </button>
+
+                <!-- Theme Toggle (Light Creme/Green <-> Dark Black/Light Green) -->
+                <button onclick="app.toggleTheme()" id="theme-toggle-btn" class="p-2.5 rounded-xl bg-creme-100 dark:bg-obsidian-800 text-emeraldBrand-900 dark:text-emeraldBrand-300 border border-emeraldBrand-800/20 dark:border-emeraldBrand-400/25 hover:scale-105 active:scale-95 transition-all shadow-sm" title="Toggle Light / Dark Mode">
+                    <i data-lucide="moon" id="theme-icon-dark" class="w-5 h-5 block dark:hidden"></i>
+                    <i data-lucide="sun" id="theme-icon-light" class="w-5 h-5 hidden dark:block text-emeraldBrand-300"></i>
+                </button>
+
+                <!-- Logged-in Account Pill -->
+                <div id="user-Session-pill" class="hidden items-center gap-2 pl-2 border-l border-emeraldBrand-800/20 dark:border-emeraldBrand-400/20">
+                    <button onclick="app.navigate('months')" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emeraldBrand-900/10 dark:bg-emeraldBrand-400/15 text-emeraldBrand-900 dark:text-emeraldBrand-200 text-sm font-bold">
+                        <i data-lucide="user-check" class="w-4 h-4 text-emeraldBrand-700 dark:text-emeraldBrand-400"></i>
+                        <span id="header-user-email" class="max-w-[130px] truncate">user@taka.com</span>
+                    </button>
+                    <button onclick="app.logoutAccount()" class="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:text-red-300 transition-all" title="Log Out">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- BREADCRUMB BAR (Visible on Months, Days, and Day Input pages) -->
+    <div id="breadcrumb-bar" class="hidden bg-creme-100/80 dark:bg-obsidian-900/90 border-b border-emeraldBrand-800/10 dark:border-emeraldBrand-400/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-2">
+            <nav class="flex items-center flex-wrap gap-1.5 text-sm font-semibold">
+                <button onclick="app.navigate('home')" class="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-emeraldBrand-900/10 dark:hover:bg-emeraldBrand-400/10 text-emeraldBrand-800 dark:text-emeraldBrand-300 transition-colors">
+                    <i data-lucide="home" class="w-4 h-4"></i>
+                    <span data-i18n="navHome">Home</span>
+                </button>
+                <span class="text-emeraldBrand-700/50 dark:text-emeraldBrand-400/40">/</span>
+                <button onclick="app.navigate('months')" id="bc-months" class="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-emeraldBrand-900/10 dark:hover:bg-emeraldBrand-400/10 text-emeraldBrand-900 dark:text-emeraldBrand-200 transition-colors">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    <span data-i18n="navMonths">Months</span>
+                </button>
+                <span id="bc-days-sep" class="hidden text-emeraldBrand-700/50 dark:text-emeraldBrand-400/40">/</span>
+                <button onclick="app.navigate('days')" id="bc-days" class="hidden items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-emeraldBrand-900/10 dark:hover:bg-emeraldBrand-400/10 text-emeraldBrand-900 dark:text-emeraldBrand-200 transition-colors">
+                    <i data-lucide="calendar-days" class="w-4 h-4"></i>
+                    <span id="bc-days-label">Month</span>
+                </button>
+                <span id="bc-input-sep" class="hidden text-emeraldBrand-700/50 dark:text-emeraldBrand-400/40">/</span>
+                <span id="bc-input" class="hidden items-center gap-1 px-2.5 py-1 rounded-lg bg-emeraldBrand-900 text-creme-50 dark:bg-emeraldBrand-400 dark:text-obsidian-950 font-bold">
+                    <i data-lucide="coins" class="w-4 h-4"></i>
+                    <span id="bc-input-label">Day Input</span>
+                </span>
+            </nav>
+
+            <!-- Cloud Sync Status Indicator -->
+            <div class="flex items-center gap-2 text-xs font-bold text-emeraldBrand-800 dark:text-emeraldBrand-300 bg-creme-50 dark:bg-obsidian-800 px-3 py-1.5 rounded-full border border-emeraldBrand-800/15 dark:border-emeraldBrand-400/20">
+                <span id="sync-dot" class="w-2 h-2 rounded-full bg-emeraldBrand-600 animate-pulse"></span>
+                <span id="sync-status-text" data-i18n="cloudSynced">Cloud Synced Across Devices</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main class="flex-grow">
+
+        <!-- ==========================================
+             VIEW 1: HOME PAGE (HERO + CREATIVE STORY + AUTH)
+             ========================================== -->
+        <section id="view-home" class="py-8 sm:py-14">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <!-- Top Hero Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+                    
+                    <!-- Left Column: Big App Name, Creative Body Text & Visual Highlights -->
+                    <div class="lg:col-span-7 space-y-6">
+                        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emeraldBrand-900/10 dark:bg-emeraldBrand-400/15 border border-emeraldBrand-800/20 dark:border-emeraldBrand-400/30 text-emeraldBrand-900 dark:text-emeraldBrand-300 text-sm font-bold">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span data-i18n="heroBadge">Crafted for Mindful Daily Living in Taka (৳)</span>
+                        </div>
+
+                        <!-- BIG APP TITLE -->
+                        <h1 class="text-5xl sm:text-7xl font-extrabold tracking-tight leading-[1.08] text-emeraldBrand-950 dark:text-white">
+                            <span data-i18n="appTitleBig">Track My Taka</span>
+                            <span class="block text-2xl sm:text-4xl font-bold text-emeraldBrand-700 dark:text-emeraldBrand-400 mt-2" data-i18n="appTaglineBig">
+                                Every Single Taka Tells Your Story.
+                            </span>
+                        </h1>
+
+                        <!-- Creative Body Text -->
+                        <div class="space-y-4 text-lg sm:text-xl text-emeraldBrand-900/90 dark:text-emeraldBrand-100/85 leading-relaxed font-medium">
+                            <p data-i18n="creativeParagraph1">
+                                From the morning rickshaw breeze and steaming cup of tong-er cha to evening groceries and family dreams—our Taka flows quietly through the rhythm of every day. Yet by the end of the month, we often wonder where the river went.
+                            </p>
+                            <p data-i18n="creativeParagraph2">
+                                <strong class="font-extrabold text-emeraldBrand-950 dark:text-emeraldBrand-300">Track My Taka</strong> turns your daily spending into effortless clarity. Record what you spend each day in seconds, watch your daily sum calculate automatically, and witness your entire month unfold on a living calendar—accessible from your phone, laptop, or tablet anywhere in the world.
+                            </p>
+                        </div>
+
+                        <!-- Curated Visual Banner Image on Home Page -->
+                        <div class="pt-2">
+                            <div class="rounded-3xl overflow-hidden glass-card-light border border-emeraldBrand-800/20 dark:border-emeraldBrand-400/25 shadow-xl relative h-56 sm:h-64 group">
+                                <img src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=1200&q=80" 
+                                     alt="Mindful Taka Savings" 
+                                     onerror="this.src='https://placehold.co/1200x500/1B4332/FDFBF7?text=Track+My+Taka'"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                                <div class="absolute inset-0 bg-gradient-to-t from-obsidian-950/90 via-obsidian-950/35 to-transparent flex items-end p-6">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-emeraldBrand-500 text-obsidian-950 flex items-center justify-center font-extrabold text-xl shadow">
+                                            ৳
+                                        </div>
+                                        <div>
+                                            <p class="text-white font-extrabold text-base sm:text-lg leading-tight" data-i18n="homeVisualCaptionTitle">
+                                                Your Daily & Monthly Taka Companion
+                                            </p>
+                                            <p class="text-emeraldBrand-200 text-xs sm:text-sm font-medium" data-i18n="homeVisualCaptionSub">
+                                                Accurate calendar tracking synced across all your devices
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Account Login / Registration Portal Card with Hero Image -->
+                    <div class="lg:col-span-5">
+                        <div class="rounded-3xl overflow-hidden glass-card-light dark:glass-card-dark shadow-2xl border-2 border-emeraldBrand-800/20 dark:border-emeraldBrand-400/25">
+                            
+                            <!-- Auth Card Visual Banner -->
+                            <div class="h-44 relative overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=900&q=80" 
+                                     alt="Emerald Financial Vault" 
+                                     onerror="this.src='https://placehold.co/900x400/1B4332/FDFBF7?text=Track+My+Taka+Account'"
+                                     class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-gradient-to-t from-emeraldBrand-950/95 via-emeraldBrand-950/60 to-transparent flex flex-col justify-end p-6">
+                                    <span class="text-xs uppercase tracking-widest text-emeraldBrand-300 font-bold" data-i18n="authBannerSub">
+                                        Cloud-Synced Personal Vault
+                                    </span>
+                                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-0.5" data-i18n="authBannerTitle">
+                                        Enter Your Taka Ledger
+                                    </h2>
+                                </div>
+                            </div>
+
+                            <!-- If already logged in, show quick continue panel -->
+                            <div id="home-logged-in-panel" class="hidden p-6 sm:p-8 space-y-5 text-center">
+                                <div class="w-16 h-16 rounded-2xl bg-emeraldBrand-900/10 dark:bg-emeraldBrand-400/20 text-emeraldBrand-800 dark:text-emeraldBrand-300 flex items-center justify-center mx-auto">
+                                    <i data-lucide="shield-check" class="w-9 h-9"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold uppercase tracking-wider text-emeraldBrand-700 dark:text-emeraldBrand-400" data-i18n="welcomeBackLabel">Active Cloud Session</p>
+                                    <h3 id="home-active-email" class="text-xl font-extrabold text-emeraldBrand-950 dark:text-white mt-1">user@example.com</h3>
+                                </div>
+                                <button onclick="app.navigate('months')" class="w-full py-4 px-6 rounded-2xl bg-emeraldBrand-900 hover:bg-emeraldBrand-800 dark:bg-emeraldBrand-500 dark:hover:bg-emeraldBrand-400 text-creme-50 dark:text-obsidian-950 font-extrabold text-lg shadow-lg flex items-center justify-center gap-2 transition-all">
+                                    <span data-i18n="goToMonthsBtn">Open Months Calendar</span>
+                                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                                </button>
+                                <button onclick="app.logoutAccount()" class="text-sm font-bold text-red-600 dark:text-red-400 hover:underline block mx-auto" data-i18n="switchAccountBtn">
+                                    Switch or Log into Another Account
+                                </button>
+                            </div>
+
+                            <!-- Auth Form (Log In / Create Account) -->
+                            <div id="home-auth-form-panel" class="p-6 sm:p-8 space-y-5">
+                                
+                                <!-- Mode Tabs -->
+                                <div class="grid grid-cols-2 p-1.5 rounded-2xl bg-creme-200/80 dark:bg-obsidian-900 border border-emeraldBrand-800/15 dark:border-emeraldBrand-400/15">
+                                    <button type="button" onclick="app.setAuthMode('login')" id="tab-login" class="py-2.5 rounded-xl font-extrabold text-sm transition-all bg-emeraldBrand-900 text-creme-50 dark:bg-emeraldBrand-400 dark:text-obsidian-950 shadow">
+                                        <span data-i18n="loginTab">Log In</span>
+                                    </button>
+                                    <button type="button" onclick="app.setAuthMode('signup')" id="tab-signup" class="py-2.5 rounded-xl font-extrabold text-sm transition-all text-emeraldBrand-900 dark:text-emeraldBrand-300">
+                                        <span data-i18n="signupTab">Create Account</span>
+                                    </button>
+                                </div>
+
+                                <p id="auth-helper-desc" class="text-sm text-emeraldBrand-800 dark:text-emeraldBrand-200/80 font-medium" data-i18n="authHelperLogin">
+                                    Log in with your email and password to access your saved Taka calendar from any device.
+                                </p>
+
+                                <!-- Feedback Alert Box -->
+                                <div id="auth-feedback" class="hidden p-3.5 rounded-xl text-sm font-bold"></div>
+
+                                <form onsubmit="app.handleAuthSubmit(event)" class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-bold mb-1.5 text-emeraldBrand-950 dark:text-emeraldBrand-200" data-i18n="emailLabel">
+                                            Email Address
+                                        </label>
+                                        <div class="relative">
+                                            <i data-lucide="mail" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-emeraldBrand-700 dark:text-emeraldBrand-400"></i>
+                                            <input type="email" id="auth-email" required
+                                                   placeholder="name@example.com"
+                                                   class="w-full pl-11 pr-4 py-3.5 rounded-xl bg-creme-50 dark:bg-obsidian-900 border border-emeraldBrand-800/25 dark:border-emeraldBrand-400/30 text-emeraldBrand-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-emeraldBrand-600 font-semibold">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-bold mb-1.5 text-emeraldBrand-950 dark:text-emeraldBrand-200" data-i18n="passwordLabel">
+                                            Password
+                                        </label>
+                                        <div class="relative">
+                                            <i data-lucide="lock" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-emeraldBrand-700 dark:text-emeraldBrand-400"></i>
+                                            <input type="password" id="auth-password" required minlength="4"
+                                                   placeholder="••••••••"
+                                                   class="w-full pl-11 pr-4 py-3.5 rounded-xl bg-creme-50 dark:bg-obsidian-900 border border-emeraldBrand-800/25 dark:border-emeraldBrand-400/30 text-emeraldBrand-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-emeraldBrand-600 font-semibold">
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" id="auth-submit-btn" class="w-full py-4 px-6 rounded-2xl bg-emeraldBrand-900 hover:bg-emeraldBrand-800 dark:bg-emeraldBrand-500 dark:hover:bg-emeraldBrand-400 text-creme-50 dark:text-obsidian-950 font-extrabold text-lg shadow-lg flex items-center justify-center gap-2 transition-all">
+                                        <span id="auth-submit-text" data-i18n="loginSubmitBtn">Log In & Go to Months</span>
+                                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                                    </button>
+                                </form>
+
+                                <!-- Quick Demo Account Access -->
+                                <div class="pt-3 border-t border-emeraldBrand-800/15 dark:border-emeraldBrand-400/15 flex items-center justify-between gap-2">
+                                    <span class="text-xs font-semibold text-emeraldBrand-700 dark:text-emeraldBrand-400" data-i18n="wantInstantPreview">
+                                        Want to explore with sample data?
+                                    </span>
+                                    <button type="button" onclick="app.loginDemoAccount()" class="text-xs font-extrabold px-3 py-1.5 rounded-lg bg-emeraldBrand-900/10 dark:bg-emeraldBrand-400/15 text-emeraldBrand-900 dark:text-emeraldBrand-300 hover:bg-emeraldBrand-900 hover:text-white dark:hover:bg-emeraldBrand-400 dark:hover:text-obsidian-950 transition-all">
+                                        <span data-i18n="tryDemoBtn">1-Click Demo Account</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom of First Page: Creator Credit Section -->
+                <div class="mt-14 pt-8 border-t border-emeraldBrand-800/15 dark:border-emeraldBrand-400/20">
+                    <div class="max-w-2xl mx-auto rounded-3xl glass-card-light p-6 sm:p-8 border-2 border-emeraldBrand-800/20 dark:border-emeraldBrand-400/30 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-5 text-center sm:text-left">
+                        <div class="flex flex-col sm:flex-row items-center gap-4">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" 
+                                 alt="Creator Emblem" 
+                                 onerror="this.src='https://placehold.co/120x120/1B4332/FDFBF7?text=SMA'"
+                                 class="w-14 h-14 rounded-2xl object-cover border-2 border-emeraldBrand-700 dark:border-emeraldBrand-400 shadow-md">
+                            <div>
+                                <span class="text-xs font-extrabold uppercase tracking-widest text-emeraldBrand-700 dark:text-emeraldBrand-400 block" data-i18n="creditBadge">
+                                    Designed & Developed By
+                                </span>
+                                <h3 class="text-xl sm:text-2xl font-extrabold text-emeraldBrand-950 dark:text-white mt-0.5">
+                                    <span data-i18n="creditPrefix">Credit:</span> S. M. Arnob
+                                </h3>
+                                <p class="text-sm sm:text-base font-bold text-emeraldBrand-800 dark:text-emeraldBrand-300 mt-0.5">
+                                    (<span data-i18n="creditEmailWord">Email</span> - <a href="mailto:smarnob13@gmail.com" class="underline hover:text-emeraldBrand-600 dark:hover:text-emeraldBrand-200 transition-colors">smarnob13@gmail.com</a>)
+                                </p>
+                            </div>
+                        </div>
+
+                        <a href="mailto:smarnob13@gmail.com" class="px-5 py-3 rounded-2xl bg-emeraldBrand-900 hover:bg-emeraldBrand-800 dark:bg-emeraldBrand-400 dark:hover:bg-emeraldBrand-300 text-creme-50 dark:text-obsidian-950 font-extrabold text-sm flex items-center gap-2 shadow-md transition-all hover:scale-105">
+                            <i data-lucide="mail" class="w-4 h-4"></i>
+                            <span>smarnob13@gmail.com</span>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ==========================================
+             VIEW 2: MONTHS PAGE (12 MONTHS + MONTHLY TAKA TOTAL BESIDE EACH MONTH)
+             ========================================== -->
+        <section id="view-months" class="hidden py-8 sm:py-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+                
+                <!-- Months Hero Header with Atmospheric Photography -->
+                <div class="relative rounded-3xl overflow-hidden shadow-xl border border-emeraldBrand-800/20 dark:border-emeraldBrand-400/25">
+                    <div class="h-56 sm:h-64 w-full relative">
+                        <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1400&q=80" 
+                             alt="Yearly Calendar Overview" 
+                             onerror="this.src='https://placehold.co/1400x450/1B4332/FDFBF7?text=Months+Overview'"
+                             class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-r from-emeraldBrand-950/95 via-emeraldBrand-950/80 to-emeraldBrand-950/40"></div>
+                    </div>
+
+                    <div class="absolute inset-0 p-6 sm:p-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+                        <div class="space-y-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emeraldBrand-400/20 text-emeraldBrand-200 text-xs font-bold border border-emeraldBrand-300/30">
+                                <i data-lucide="calendar-range" class="w-3.5 h-3.5"></i>
+                                <span data-i18n="monthsPageBadge">Annual Financial Calendar</span>
+                            </span>
+                            <h2 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight" data-i18n="monthsPageTitle">
+                                Select a Month
+                            </h2>
+                            <p class="text-emeraldBrand-100/85 text-sm sm:text-base max-w-xl" data-i18n="monthsPageSubtitle">
+                                Every month displays the sum of all daily expenses beside the month name. Click any month to inspect its daily calendar.
+                            </p>
+                        </div>
+
+                        <!-- Year Selector & Annual Total Pill -->
+                        <div class="flex flex-wrap items-center gap-3">
+                            <!-- Year Switcher -->
+                            <div class="flex items-center bg-obsidian-950/75 backdrop-blur-md border border-emeraldBrand-400/30 rounded-2xl p-1.5 text-white">
+                                <button onclick="app.changeYear(-1)" class="p-2 rounded-xl hover:bg-emeraldBrand-500/20 transition-colors" title="Previous Year">
+                                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                                </button>
+                                <span id="months-year-label" class="px-4 font-extrabold text-xl">2026</span>
+                                <button onclick="app.changeYear(1)" class="p-2 rounded-xl hover:bg-emeraldBrand-500/20 transition-colors" title="Next Year">
+                                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+
+                            <!-- Grand Yearly Total Card -->
+                            <div class="bg-emeraldBrand-500 text-obsidian-950 px-5 py-3 rounded-2xl shadow-lg">
+                                <span class="text-xs font-extrabold uppercase tracking-wider block opacity-80" data-i18n="yearTotalLabel">Year Total Spent</span>
+                                <span id="months-year-total" class="text-2xl font-extrabold block leading-tight">৳ 0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 12 Months Grid -->
+                <div id="months-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Dynamically rendered by JS with unique Unsplash images & monthly Taka totals beside the month name -->
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ==========================================
+             VIEW 3: DAYS PAGE (ACCURATE CALENDAR DAYS + TOTAL TAKA BESIDE EACH DATE)
+             ========================================== -->
+        <section id="view-days" class="hidden py-8 sm:py-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+                
+                <!-- Days Page Atmospheric Header Banner -->
+                <div class="relative rounded-3xl overflow-hidden shadow-xl border border-emeraldBrand-800/20 dark:border-emeraldBrand-400/25">
+                    <div class="h-56 sm:h-64 w-full relative">
+                        <img id="days-header-img" src="https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=1400&q=80" 
+                             alt="Month Banner" 
+                             onerror="this.src='https://placehold.co/1400x450/1B4332/FDFBF7?text=Daily+Calendar'"
+                             class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-r from-emeraldBrand-950/95 via-emeraldBrand-950/75 to-emeraldBrand-950/35"></div>
+                    </div>
+
+                    <div class="absolute inset-0 p-6 sm:p-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+                        <div class="space-y-3">
+                            <button onclick="app.navigate('months')" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold backdrop-blur-md transition-all">
+                                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                                <span data-i18n="backToMonthsBtn">Back to All Months</span>
+                            </button>
+                            <h2 id="days-month-title" class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
+                                October 2026
+                            </h2>
+                            <p class="text-emeraldBrand-100/90 text-sm sm:text-base max-w-xl" data-i18n="daysPageSubtitle">
+                                Click any date below to enter or review your daily expenses. Each date shows the total Taka spent right beside the date.
+                            </p>
+                        </div>
+
+                        <!-- Total Monthly Taka Spent Summary Badge -->
+                        <div class="bg-emeraldBrand-400 text-obsidian-950 px-6 py-4 rounded-2xl shadow-xl min-w-[210px]">
+                            <span class="text-xs font-extrabold uppercase tracking-wider block opacity-85" data-i18n="monthTotalSpentLabel">Total Month Spent</span>
+                            <span id="days-month-total-badge" class="text-3xl font-extrabold block mt-0.5">৳ 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekday Headers (Desktop/Tablet Calendar Alignment) -->
+                <div id="weekdays-header" class="hidden lg:grid grid-cols-7 gap-4 text-center font-extrabold text-sm uppercase tracking-wider text-emeraldBrand-800 dark:text-emeraldBrand-300 bg-creme-100 dark:bg-obsidian-900 py-3 rounded-2xl border border-emeraldBrand-800/15 dark:border-emeraldBrand-400/15">
+                    <!-- Rendered in EN or BN via JS -->
+                </div>
+
+                <!-- Accurate Calendar Days Grid -->
+                <div id="days-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+                    <!-- Dynamically rendered by JS with exact date, weekday, visual accent & total Taka beside the date -->
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ==========================================
+             VIEW 4: DAY AMOUNT INPUT PAGE (ENTER SPENDING IN TAKA + SUM BELOW)
+             ========================================== -->
+        <section id="view-day-input" class="hidden py-8 sm:py-12">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+                
+                <!-- Top Visual Banner for Selected Day -->
+                <div class="relative rounded-3xl overflow-hidden shadow-xl border border-emeraldBrand-800/20 dark:border-emeraldBrand-400/25">
+                    <div class="h-52 sm:h-60 w-full relative">
+                        <img src="https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=1400&q=80" 
+                             alt="Daily Taka Input" 
+                             onerror="this.src='https://placehold.co/1400x450/1B4332/FDFBF7?text=Daily+Taka+Ledger'"
+                             class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-r from-emeraldBrand-950/95 via-emeraldBrand-950/80 to-emeraldBrand-950/40"></div>
+                    </div>
+
+                    <div class="absolute inset-0 p-6 sm:p-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                        <div class="space-y-2.5">
+                            <button onclick="app.navigate('days')" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold backdrop-blur-md transition-all">
+                                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                                <span data-i18n="backToDaysBtn">Back to Month Days</span>
+                            </button>
+                            <div class="flex items-center gap-2 text-emeraldBrand-300 text-sm font-bold">
+                                <i data-lucide="calendar-clock" class="w-4 h-4"></i>
+                                <span id="input-day-weekday">Tuesday</span>
+                            </div>
+                            <h2 id="input-day-full-date" class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
+                                27 October 2026
+                            </h2>
+                        </div>
+
+                        <!-- Previous / Next Day Quick Jump -->
+                        <div class="flex items-center gap-2">
+                            <button onclick="app.stepDay(-1)" id="prev-day-btn" class="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-sm font-bold backdrop-blur-md flex items-center gap-1.5 transition-all">
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                <span data-i18n="prevDayBtn">Prev Day</span>
+                            </button>
+                            <button onclick="app.stepDay(1)" id="next-day-btn" class="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-sm font-bold backdrop-blur-md flex items-center gap-1.5 transition-all">
+                                <span data-i18n="nextDayBtn">Next Day</span>
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Card: Add Spending in Taka -->
+                <div class="rounded-3xl glass-card-light dark:glass-card-dark p-6 sm:p-8 shadow-xl">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-6 border-b border-emeraldBrand-800/15 dark:border-emeraldBrand-400/15">
+                        <div>
+                            <h3 class="text-2xl font-extrabold text-emeraldBrand-950 dark:text-white flex items-center gap-2">
+                                <i data-lucide="plus-circle" class="w-6 h-6 text-emeraldBrand-700 dark:text-emeraldBrand-400"></i>
+                                <span data-i18n="addExpenseHeading">Enter Today's Spending (in Taka ৳)</span>
+                            </h3>
+                            <p class="text-sm text-emeraldBrand-800 dark:text-emeraldBrand-300/80 mt-0.5" data-i18n="addExpenseSub">
+                                Add each amount you spent today or enter your whole day's spending at once. It sums below automatically.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Visual Category Quick Selectors with Curated Images -->
+                    <div class="mt-5">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-emeraldBrand-800 dark:text-emeraldBrand-300 mb-2.5" data-i18n="selectCategoryLabel">
+                            Choose a Category (or type a custom note below)
+                        </label>
+                        <div id="category-chips" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                            <!-- Dynamically rendered with external images via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Expense Input Form -->
+                    <form onsubmit="app.handleAddExpense(event)" class="mt-6 grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+                        
+                        <!-- Amount in Taka -->
+                        <div class="sm:col-span-4">
+                            <label class="block text-sm font-extrabold mb-1.5 text-emeraldBrand-950 dark:text-emeraldBrand-200" data-i18n="amountTakaLabel">
+                                Amount Spent (Taka ৳) *
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-extrabold text-emeraldBrand-700 dark:text-emeraldBrand-400">৳</span>
+                                <input type="number" id="expense-amount" step="any" min="0.01" required
+                                       placeholder="500"
+                                       class="w-full pl-11 pr-4 py-4 rounded-2xl bg-creme-50 dark:bg-obsidian-900 border-2 border-emeraldBrand-800/30 dark:border-emeraldBrand-400/35 text-emeraldBrand-950 dark:text-white text-xl font-extrabold focus:outline-none focus:ring-2 focus:ring-emeraldBrand-600">
+                            </div>
+                        </div>
+
+                        <!-- Description / Note -->
+                        <div class="sm:col-span-5">
+                            <label class="block text-sm font-extrabold mb-1.5 text-emeraldBrand-950 dark:text-emeraldBrand-200" data-i18n="expenseNoteLabel">
+                                What did you spend on? (Optional)
+                            </label>
+                            <div class="relative">
+                                <i data-lucide="pen-line" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-emeraldBrand-700 dark:text-emeraldBrand-400"></i>
+                                <input type="text" id="expense-note"
+                                       data-i18n-placeholder="expenseNotePlaceholder"
+                                       placeholder="e.g. Whole day bazaar, rickshaw, lunch..."
+                                       class="w-full pl-11 pr-4 py-4 rounded-2xl bg-creme-50 dark:bg-obsidian-900 border-2 border-emeraldBrand-800/20 dark:border-emeraldBrand-400/25 text-emeraldBrand-950 dark:text-white text-base font-bold focus:outline-none focus:ring-2 focus:ring-emeraldBrand-600">
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="sm:col-span-3">
+                            <button type="submit" class="w-full py-4 px-5 rounded-2xl bg-emeraldBrand-900 hover:bg-emeraldBrand-800 dark:bg-emeraldBrand-500 dark:hover:bg-emeraldBrand-400 text-creme-50 dark:text-obsidian-950 font-extrabold text-base sm:text-lg shadow-lg flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                                <span data-i18n="addTakaBtn">Add Taka</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Entries List for Selected Day -->
+                <div class="rounded-3xl glass-card-light dark:glass-card-dark p-6 sm:p-8 shadow-xl space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl sm:text-2xl font-extrabold text-emeraldBrand-950 dark:text-white flex items-center gap-2">
+                            <i data-lucide="receipt" class="w-6 h-6 text-emeraldBrand-700 dark:text-emeraldBrand-400"></i>
+                            <span data-i18n="dayEntriesTitle">Today's Recorded Spending</span>
+                        </h3>
+                        <span id="day-entries-count" class="text-xs sm:text-sm font-extrabold px-3 py-1 rounded-full bg-emeraldBrand-900/10 dark:bg-emeraldBrand-400/15 text-emeraldBrand-900 dark:text-emeraldBrand-300">
+                            0 entries
+                        </span>
+                    </div>
+
+                    <!-- Dynamic List of Today's Expenses -->
+                    <div id="day-entries-list" class="space-y-3">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- GRAND TOTAL SUM OF THE DAY SHOWN BELOW -->
+                    <div class="mt-8 rounded-3xl overflow-hidden relative shadow-2xl border-2 border-emeraldBrand-700 dark:border-emeraldBrand-400">
+                        <img src="https://images.unsplash.com/photo-1518458028785-8fbcd101ebb9?auto=format&fit=crop&w=1200&q=80" 
+                             alt="Total Taka Sum Background" 
+                             onerror="this.src='https://placehold.co/1200x300/1B4332/FDFBF7?text=Total+Day+Sum'"
+                             class="w-full h-full object-cover absolute inset-0">
+                        <div class="relative z-10 bg-gradient-to-r from-emeraldBrand-950/95 via-emeraldBrand-900/90 to-emeraldBrand-950/90 p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div>
+                                <span class="text-xs sm:text-sm uppercase tracking-widest text-emeraldBrand-300 font-extrabold block" data-i18n="totalDaySumSubtitle">
+                                    Automatic Daily Sum
+                                </span>
+                                <h4 class="text-2xl sm:text-3xl font-extrabold text-white mt-0.5" data-i18n="totalDaySumTitle">
+                                    Total Amount Spent This Day
+                                </h4>
+                                <p id="sum-box-month-context" class="text-xs sm:text-sm text-emeraldBrand-200/85 mt-1">
+                                    Automatically added to your Monthly Total
+                                </p>
+                            </div>
+                            <div class="bg-creme-50 dark:bg-obsidian-950 text-emeraldBrand-950 dark:text-emeraldBrand-300 px-6 py-4 rounded-2xl shadow-xl border border-emeraldBrand-400/40">
+                                <span id="day-grand-total-display" class="text-3xl sm:text-5xl font-extrabold tracking-tight">
+                                    ৳ 0
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==========================================
+         MODAL: GITHUB + VERCEL + BACKEND DEPLOYMENT INSTRUCTIONS
+         ========================================== -->
+    <div id="guide-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+        <div class="max-w-3xl w-full max-h-[90vh] overflow-y-auto rounded-3xl glass-card-light dark:glass-card-dark p-6 sm:p-8 border-2 border-emeraldBrand-700/30 dark:border-emeraldBrand-400/30 shadow-2xl space-y-6">
+            <div class="flex items-start justify-between gap-4 border-b border-emeraldBrand-800/15 dark:border-emeraldBrand-400/15 pb-4">
+                <div>
+                    <span class="text-xs font-extrabold uppercase tracking-widest text-emeraldBrand-700 dark:text-emeraldBrand-400">Full-Stack Production Guide</span>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-emeraldBrand-950 dark:text-white mt-0.5">
+                        Deploy "Track My Taka" to GitHub & Vercel
+                    </h3>
+                </div>
+                <button onclick="app.toggleGuideModal(false)" class="p-2 rounded-xl bg-emeraldBrand-900/10 dark:bg-emeraldBrand-400/15 hover:bg-red-500/20 text-emeraldBrand-950 dark:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div class="space-y-5 text-sm sm:text-base leading-relaxed text-emeraldBrand-950 dark:text-emeraldBrand-100">
+                <div class="p-4 rounded-2xl bg-emeraldBrand-900/10 dark:bg-emeraldBrand-400/10 border border-emeraldBrand-700/20">
+                    <p class="font-bold">
+                        ✅ Your Frontend & Cloud Backend are already integrated in this code! Right now, it uses Firebase Firestore for instant real-time cloud persistence across devices, and you can deploy this exact repository to GitHub & Vercel in 3 minutes.
+                    </p>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-lg font-extrabold text-emeraldBrand-900 dark:text-emeraldBrand-300">Step 1: Push Your Code to GitHub</h4>
+                    <ol class="list-decimal list-inside space-y-1.5 font-medium">
+                        <li>Save this file as <code class="px-2 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold">index.html</code> inside a new folder named <code class="px-2 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold">track-my-taka</code>.</li>
+                        <li>Go to <a href="https://github.com/new" target="_blank" class="underline font-bold text-emeraldBrand-700 dark:text-emeraldBrand-400">github.com/new</a> and create a repository named <code class="px-2 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold">track-my-taka</code>.</li>
+                        <li>Run these terminal commands in your project folder:</li>
+                    </ol>
+                    <pre class="p-4 rounded-2xl bg-obsidian-950 text-emeraldBrand-300 text-xs overflow-x-auto font-mono">git init
+git add index.html
+git commit -m "Initial release of Track My Taka full-stack app"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/track-my-taka.git
+git push -u origin main</pre>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-lg font-extrabold text-emeraldBrand-900 dark:text-emeraldBrand-300">Step 2: Connect Your Cloud Database for Cross-Device Sync</h4>
+                    <p>To keep user accounts and Taka data synced across phones and laptops on your own Vercel domain:</p>
+                    <ol class="list-decimal list-inside space-y-1.5 font-medium">
+                        <li>Go to <a href="https://console.firebase.google.com/" target="_blank" class="underline font-bold text-emeraldBrand-700 dark:text-emeraldBrand-400">console.firebase.google.com</a> and click <strong>Create a project</strong>.</li>
+                        <li>Enable <strong>Firestore Database</strong> (Start in production/test mode) and <strong>Authentication</strong> (Anonymous/Email).</li>
+                        <li>Copy your Web App <code class="px-2 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold">firebaseConfig</code> object from Project Settings and paste it into the <code class="px-2 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold">CUSTOM_FIREBASE_CONFIG</code> variable in the script section of <code class="px-2 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold">index.html</code>.</li>
+                    </ol>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-lg font-extrabold text-emeraldBrand-900 dark:text-emeraldBrand-300">Step 3: Deploy Live on Vercel</h4>
+                    <ol class="list-decimal list-inside space-y-1.5 font-medium">
+                        <li>Log into <a href="https://vercel.com" target="_blank" class="underline font-bold text-emeraldBrand-700 dark:text-emeraldBrand-400">vercel.com</a> with your GitHub account.</li>
+                        <li>Click <strong>Add New... → Project</strong> and import your <code class="px-2 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold">track-my-taka</code> repository.</li>
+                        <li>Leave Framework Preset as <strong>Other</strong> and click <strong>Deploy</strong>. Your live URL (<code class="px-2 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold">track-my-taka.vercel.app</code>) will be live globally in ~15 seconds, and every future <code class="px-2 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold">git push</code> will auto-deploy!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-emeraldBrand-800/15 dark:border-emeraldBrand-400/15 flex justify-end">
+                <button onclick="app.toggleGuideModal(false)" class="px-6 py-3 rounded-xl bg-emeraldBrand-900 dark:bg-emeraldBrand-400 text-creme-50 dark:text-obsidian-950 font-extrabold">
+                    Got It, Let's Track Taka!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER WITH EXTERNAL IMAGERY & QUICK CONTROLS -->
+    <footer class="mt-16 border-t border-emeraldBrand-800/15 dark:border-emeraldBrand-400/15 bg-creme-100/70 dark:bg-obsidian-900/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <img src="https://images.unsplash.com/photo-1580519542036-c47de6196ba5?auto=format&fit=crop&w=120&q=80" 
+                     alt="Taka Coin" 
+                     onerror="this.src='https://placehold.co/80x80/1B4332/FDFBF7?text=৳'"
+                     class="w-10 h-10 rounded-xl object-cover border border-emeraldBrand-700/30">
+                <div>
+                    <p class="font-extrabold text-emeraldBrand-950 dark:text-white text-sm" data-i18n="footerTitle">
+                        Track My Taka • ট্র্যাক মাই টাকা
+                    </p>
+                    <p class="text-xs text-emeraldBrand-700 dark:text-emeraldBrand-400" data-i18n="footerSubtitle">
+                        Creme & Emerald Light Mode • Obsidian & Mint Dark Mode • Cloud Synced
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="app.toggleGuideModal(true)" class="text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl bg-emeraldBrand-900/10 dark:bg-emeraldBrand-400/15 text-emeraldBrand-900 dark:text-emeraldBrand-300 hover:underline flex items-center gap-1.5">
+                    <i data-lucide="github" class="w-4 h-4"></i>
+                    <span data-i18n="deployGuideBtn">Vercel & GitHub Guide</span>
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- FIREBASE & APPLICATION FULL-STACK LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ============================================================================
+        // BILINGUAL DICTIONARY (ENGLISH & বাংলা) + BENGALI NUMERAL CONVERTER
+        // ============================================================================
+        const I18N = {
+            en: {
+                appTitleBig: "Track My Taka",
+                appTaglineBig: "Every Single Taka Tells Your Story.",
+                navSubtitle: "Smart Daily Taka Ledger",
+                deployGuideBtn: "Vercel & GitHub Guide",
+                navHome: "Home",
+                navMonths: "Months",
+                cloudSynced: "Cloud Synced Across Devices",
+                heroBadge: "Crafted for Mindful Daily Living in Taka (৳)",
+                creativeParagraph1: "From the morning rickshaw breeze and steaming cup of tong-er cha to evening groceries and family dreams—our Taka flows quietly through the rhythm of every day. Yet by the end of the month, we often wonder where the river went.",
+                creativeParagraph2: "Track My Taka turns your daily spending into effortless clarity. Record what you spend each day in seconds, watch your daily sum calculate automatically, and witness your entire month unfold on a living calendar—accessible from your phone, laptop, or tablet anywhere in the world.",
+                homeVisualCaptionTitle: "Your Daily & Monthly Taka Companion",
+                homeVisualCaptionSub: "Accurate calendar tracking synced across all your devices",
+                creditBadge: "Designed & Developed By",
+                creditPrefix: "Credit:",
+                creditEmailWord: "Email",
+                authBannerSub: "Cloud-Synced Personal Vault",
+                authBannerTitle: "Enter Your Taka Ledger",
+                welcomeBackLabel: "Active Cloud Session",
+                goToMonthsBtn: "Open Months Calendar",
+                switchAccountBtn: "Switch or Log into Another Account",
+                loginTab: "Log In",
+                signupTab: "Create Account",
+                authHelperLogin: "Log in with your email and password to access your saved Taka calendar from any device.",
+                authHelperSignup: "Create a new account with your email and password. Your Taka data will stay saved across all devices.",
+                emailLabel: "Email Address",
+                passwordLabel: "Password",
+                loginSubmitBtn: "Log In & Go to Months",
+                signupSubmitBtn: "Create Account & Start",
+                wantInstantPreview: "Want to explore with sample data?",
+                tryDemoBtn: "1-Click Demo Account",
+                howItWorksTag: "Simple 3-Step Daily Flow",
+                howItWorksTitle: "Home → Months → Days → Daily Taka Input",
+                howItWorksBody: "Select any month of the year to view its grand total in Taka right beside the month name. Click into any calendar date to view that day's total beside the date, and log every expense throughout the day with instant automatic summation.",
+                monthsPageBadge: "Annual Financial Calendar",
+                monthsPageTitle: "Select a Month",
+                monthsPageSubtitle: "Every month displays the sum of all daily expenses beside the month name. Click any month to inspect its daily calendar.",
+                yearTotalLabel: "Year Total Spent",
+                backToMonthsBtn: "Back to All Months",
+                daysPageSubtitle: "Click any date below to enter or review your daily expenses. Each date shows the total Taka spent right beside the date.",
+                monthTotalSpentLabel: "Total Month Spent",
+                backToDaysBtn: "Back to Month Days",
+                prevDayBtn: "Prev Day",
+                nextDayBtn: "Next Day",
+                addExpenseHeading: "Enter Today's Spending (in Taka ৳)",
+                addExpenseSub: "Add each amount you spent today or enter your whole day's spending at once. It sums below automatically.",
+                selectCategoryLabel: "Choose a Category (or type a custom note below)",
+                amountTakaLabel: "Amount Spent (Taka ৳) *",
+                expenseNoteLabel: "What did you spend on? (Optional)",
+                expenseNotePlaceholder: "e.g. Whole day bazaar, rickshaw, lunch...",
+                addTakaBtn: "Add Taka",
+                dayEntriesTitle: "Today's Recorded Spending",
+                totalDaySumSubtitle: "Automatic Daily Sum",
+                totalDaySumTitle: "Total Amount Spent This Day",
+                footerTitle: "Track My Taka • ট্র্যাক মাই টাকা",
+                footerSubtitle: "Creme & Emerald Light Mode • Obsidian & Mint Dark Mode • Cloud Synced",
+                daysCountLabel: "Days",
+                activeDaysLabel: "days logged",
+                noEntriesYet: "No spending recorded for this date yet. Enter an amount in Taka above!",
+                entriesWord: "entries",
+                deleteBtn: "Remove",
+                todayBadge: "Today",
+                wholeDaySpendDefault: "Daily Spending",
+                months: [
+                    "January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"
+                ],
+                weekdaysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+                weekdaysFull: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+            },
+            bn: {
+                appTitleBig: "ট্র্যাক মাই টাকা",
+                appTaglineBig: "আপনার প্রতিটি টাকার হিসাব থাকুক চোখের সামনে।",
+                navSubtitle: "দৈনিক টাকার স্মার্ট হিসাব",
+                deployGuideBtn: "ভার্সেল ও গিটহাব গাইড",
+                navHome: "হোম",
+                navMonths: "মাসসমূহ",
+                cloudSynced: "ক্লাউডে সুরক্ষিত ও সিঙ্ক করা",
+                heroBadge: "প্রতিদিনের টাকার (৳) সঠিক ও সুন্দর হিসাব",
+                creativeParagraph1: "সকালের রিকশা ভাড়া আর এক কাপ গরম চা থেকে শুরু করে সন্ধ্যার বাজার কিংবা পরিবারের স্বপ্ন—প্রতিদিন আমাদের টাকা নানা প্রয়োজনে খরচ হয়। কিন্তু মাস শেষে প্রায়ই মনে হয়, এত টাকা কোথায় কীভাবে খরচ হয়ে গেল?",
+                creativeParagraph2: "ট্র্যাক মাই টাকা আপনার প্রতিদিনের খরচকে করে তোলে একদম স্বচ্ছ ও সহজ। সারাদিনে কত টাকা খরচ করলেন তা কয়েক সেকেন্ডে লিখে রাখুন, নিচে স্বয়ংক্রিয়ভাবে দিনের মোট যোগফল দেখুন এবং মাস শেষে পুরো মাসের মোট খরচ ক্যালেন্ডারে এক নজরে দেখে নিন—যেকোনো মোবাইল বা কম্পিউটার থেকে।",
+                homeVisualCaptionTitle: "আপনার দৈনিক ও মাসিক টাকার বিশ্বস্ত সঙ্গী",
+                homeVisualCaptionSub: "সঠিক ক্যালেন্ডার হিসাব যা আপনার সব ডিভাইসে সিঙ্ক থাকে",
+                creditBadge: "ডিজাইন ও ডেভেলপমেন্ট",
+                creditPrefix: "ক্রেডিট:",
+                creditEmailWord: "ইমেইল",
+                authBannerSub: "ক্লাউড-সিঙ্কড পার্সোনাল ভল্ট",
+                authBannerTitle: "আপনার টাকার খাতায় প্রবেশ করুন",
+                welcomeBackLabel: "সক্রিয় ক্লাউড অ্যাকাউন্ট",
+                goToMonthsBtn: "মাসের ক্যালেন্ডার খুলুন",
+                switchAccountBtn: "অন্য অ্যাকাউন্টে পরিবর্তন বা লগইন করুন",
+                loginTab: "লগ ইন",
+                signupTab: "নতুন অ্যাকাউন্ট",
+                authHelperLogin: "যেকোনো ডিভাইস থেকে আপনার সংরক্ষিত টাকার হিসাব দেখতে ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।",
+                authHelperSignup: "ইমেইল এবং পাসওয়ার্ড দিয়ে নতুন অ্যাকাউন্ট তৈরি করুন। আপনার সব তথ্য ক্লাউডে সুরক্ষিত থাকবে।",
+                emailLabel: "ইমেইল অ্যাড্রেস",
+                passwordLabel: "পাসওয়ার্ড",
+                loginSubmitBtn: "লগ ইন করে মাসের পাতায় যান",
+                signupSubmitBtn: "অ্যাকাউন্ট খুলুন ও শুরু করুন",
+                wantInstantPreview: "নমুনা তথ্যসহ দেখতে চান?",
+                tryDemoBtn: "১-ক্লিকে ডেমো অ্যাকাউন্ট",
+                howItWorksTag: "সহজ ৩-ধাপের দৈনিক হিসাব",
+                howItWorksTitle: "হোম → মাস → দিন → প্রতিদিনের টাকার ইনপুট",
+                howItWorksBody: "যেকোনো মাস নির্বাচন করে মাসের নামের পাশেই দেখুন পুরো মাসের মোট খরচ। এরপর যেকোনো তারিখে ক্লিক করে তারিখের পাশে দিনের মোট টাকা দেখুন এবং নতুন খরচ যোগ করুন।",
+                monthsPageBadge: "বার্ষিক আর্থিক ক্যালেন্ডার",
+                monthsPageTitle: "একটি মাস নির্বাচন করুন",
+                monthsPageSubtitle: "প্রতিটি মাসের নামের পাশে সেই মাসের সব দিনের মোট টাকার যোগফল দেখানো হচ্ছে। বিস্তারিত দেখতে যেকোনো মাসে ক্লিক করুন।",
+                yearTotalLabel: "সারা বছরের মোট খরচ",
+                backToMonthsBtn: "সব মাসের তালিকায় ফিরুন",
+                daysPageSubtitle: "নিচের যেকোনো তারিখে ক্লিক করে প্রতিদিনের খরচ যোগ বা পরিবর্তন করুন। প্রতিটি তারিখের পাশে ওই দিনের মোট খরচ দেওয়া আছে।",
+                monthTotalSpentLabel: "এই মাসের মোট খরচ",
+                backToDaysBtn: "মাসের সব তারিখে ফিরুন",
+                prevDayBtn: "আগের দিন",
+                nextDayBtn: "পরের দিন",
+                addExpenseHeading: "আজকের খরচের পরিমাণ লিখুন (টাকায় ৳)",
+                addExpenseSub: "সারাদিনে যত টাকা খরচ করেছেন তা একসাথে বা আলাদাভাবে লিখুন। নিচে স্বয়ংক্রিয়ভাবে মোট যোগফল দেখা যাবে।",
+                selectCategoryLabel: "খরচের ধরন বেছে নিন (অথবা নিচে নিজের মতো লিখুন)",
+                amountTakaLabel: "খরচের পরিমাণ (টাকা ৳) *",
+                expenseNoteLabel: "কী বাবদ খরচ হলো? (ঐচ্ছিক)",
+                expenseNotePlaceholder: "যেমন: সারাদিনের বাজার, রিকশা ভাড়া, দুপুরের খাবার...",
+                addTakaBtn: "টাকা যোগ করুন",
+                dayEntriesTitle: "আজকের লিপিবদ্ধ খরচের তালিকা",
+                totalDaySumSubtitle: "স্বয়ংক্রিয় দৈনিক যোগফল",
+                totalDaySumTitle: "এই দিনে সর্বমোট খরচ হয়েছে",
+                footerTitle: "ট্র্যাক মাই টাকা • Track My Taka",
+                footerSubtitle: "ক্রিম ও সবুজ লাইট মোড • কালো ও হালকা সবুজ ডार्क মোড • ক্লাউড সিঙ্কড",
+                daysCountLabel: "দিন",
+                activeDaysLabel: "দিনে খরচ লেখা হয়েছে",
+                noEntriesYet: "এই তারিখে এখনো কোনো খরচ যোগ করা হয়নি। উপরে টাকার পরিমাণ লিখে যোগ করুন!",
+                entriesWord: "টি এন্ট্রি",
+                deleteBtn: "মুছে ফেলুন",
+                todayBadge: "আজ",
+                wholeDaySpendDefault: "সারাদিনের খরচ",
+                months: [
+                    "জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন",
+                    "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"
+                ],
+                weekdaysShort: ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহঃ", "শুক্র", "শনি"],
+                weekdaysFull: ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"]
+            }
+        };
+
+        // Curated External Photography for all 12 Months
+        const MONTH_IMAGES = [
+            "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=700&q=80", // Jan
+            "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=700&q=80", // Feb
+            "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=700&q=80", // Mar
+            "https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=700&q=80", // Apr
+            "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=700&q=80", // May
+            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=700&q=80", // Jun
+            "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=700&q=80", // Jul
+            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=700&q=80", // Aug
+            "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=700&q=80", // Sep
+            "https://images.unsplash.com/photo-1507371341162-763b5e419408?auto=format&fit=crop&w=700&q=80", // Oct
+            "https://images.unsplash.com/photo-1476820865390-c52aeebb9891?auto=format&fit=crop&w=700&q=80", // Nov
+            "https://images.unsplash.com/photo-1512389142860-9c449e58a543?auto=format&fit=crop&w=700&q=80"  // Dec
+        ];
+
+        // Rotating subtle day header thumbnails
+        const DAY_THUMBNAILS = [
+            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=300&q=60",
+            "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=300&q=60",
+            "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=300&q=60",
+            "https://images.unsplash.com/photo-1565514020179-026b92b84bb6?auto=format&fit=crop&w=300&q=60"
+        ];
+
+        // Visual Expense Categories with External Unsplash Photography
+        const EXPENSE_CATEGORIES = [
+            {
+                id: "bazaar",
+                en: "Bazaar & Food",
+                bn: "বাজার ও খাবার",
+                img: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=300&q=80"
+            },
+            {
+                id: "transport",
+                en: "Rickshaw & Travel",
+                bn: "রিকশা ও যাতায়াত",
+                img: "https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=300&q=80"
+            },
+            {
+                id: "bills",
+                en: "Bills & Rent",
+                bn: "বিল ও বাসা ভাড়া",
+                img: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=300&q=80"
+            },
+            {
+                id: "shopping",
+                en: "Shopping & Needs",
+                bn: "কেনাকাটা ও প্রয়োজন",
+                img: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=300&q=80"
+            },
+            {
+                id: "health",
+                en: "Medicine & Care",
+                bn: "ওষুধ ও স্বাস্থ্য",
+                img: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=300&q=80"
+            },
+            {
+                id: "wholeday",
+                en: "Whole Day Total",
+                bn: "সারাদিনের মোট খরচ",
+                img: "https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=300&q=80"
+            }
+        ];
+
+        // ============================================================================
+        // APPLICATION STATE & CLOUD BACKEND INITIALIZATION
+        // ============================================================================
+        const now = new Date();
+        const state = {
+            lang: 'en', // 'en' or 'bn'
+            theme: 'light', // 'light' (Creme & Green) or 'dark' (Black & Light Green)
+            view: 'home', // 'home' | 'months' | 'days' | 'day-input'
+            authMode: 'login', // 'login' | 'signup'
+            currentAccount: null, // { email, accountKey }
+            selectedYear: now.getFullYear(),
+            selectedMonth: now.getMonth(), // 0 - 11
+            selectedDay: now.getDate(), // 1 - 31
+            selectedCategory: 'wholeday',
+            // Structure of expenses: { "YYYY-MM-DD": [ { id, amount, note, categoryId, createdAt } ] }
+            expensesByDate: {},
+            firebaseReady: false,
+            unsubscribeAccountListener: null
+        };
+
+        // Optional: If deploying outside this environment on Vercel, paste your own Firebase config here
+        const CUSTOM_FIREBASE_CONFIG = null;
+
+        let db = null;
+        let auth = null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'track-my-taka-app';
+
+        async function initCloudBackend() {
+            try {
+                const rawConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : CUSTOM_FIREBASE_CONFIG;
+                if (!rawConfig) {
+                    updateSyncIndicator(false);
+                    return;
+                }
+                const firebaseApp = initializeApp(rawConfig);
+                auth = getAuth(firebaseApp);
+                db = getFirestore(firebaseApp);
+
+                // RULE 3: Authenticate first before any Firestore operations
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        state.firebaseReady = true;
+                        updateSyncIndicator(true);
+                    }
+                });
+            } catch (err) {
+                console.warn("Cloud backend running in local preview fallback:", err);
+                updateSyncIndicator(false);
+            }
+        }
+
+        function updateSyncIndicator(isCloud) {
+            const dot = document.getElementById('sync-dot');
+            const text = document.getElementById('sync-status-text');
+            if (!dot || !text) return;
+            if (isCloud) {
+                dot.className = "w-2 h-2 rounded-full bg-emeraldBrand-500 animate-pulse";
+                text.textContent = I18N[state.lang].cloudSynced;
+            } else {
+                dot.className = "w-2 h-2 rounded-full bg-amber-500";
+                text.textContent = state.lang === 'bn' ? "রেডি (ভার্সেল ক্লাউড গাইড দেখুন)" : "Ready (See Vercel Cloud Guide)";
+            }
+        }
+
+        // ============================================================================
+        // NUMBER & CURRENCY FORMATTING (ENGLISH & BENGALI DIGITS)
+        // ============================================================================
+        const BN_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+
+        function toLocalizedDigits(val) {
+            const str = String(val);
+            if (state.lang !== 'bn') return str;
+            return str.replace(/\d/g, d => BN_DIGITS[d]);
+        }
+
+        function formatTaka(amount) {
+            const num = Number(amount) || 0;
+            const formatted = num.toLocaleString('en-IN', {
+                maximumFractionDigits: num % 1 === 0 ? 0 : 2
+            });
+            return `৳ ${toLocalizedDigits(formatted)}`;
+        }
+
+        function makeDateKey(year, monthIndex, day) {
+            const m = String(monthIndex + 1).padStart(2, '0');
+            const d = String(day).padStart(2, '0');
+            return `${year}-${m}-${d}`;
+        }
+
+        function getDaysInMonth(year, monthIndex) {
+            return new Date(year, monthIndex + 1, 0).getDate();
+        }
+
+        function getFirstWeekdayOfMonth(year, monthIndex) {
+            return new Date(year, monthIndex, 1).getDay();
+        }
+
+        // ============================================================================
+        // CALCULATION HELPERS (DAILY TOTALS, MONTHLY TOTALS, YEARLY TOTALS)
+        // ============================================================================
+        function getDayTotal(year, monthIndex, day) {
+            const key = makeDateKey(year, monthIndex, day);
+            const list = state.expensesByDate[key] || [];
+            return list.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        }
+
+        function getMonthStats(year, monthIndex) {
+            const daysCount = getDaysInMonth(year, monthIndex);
+            let totalTaka = 0;
+            let activeDays = 0;
+            for (let d = 1; d <= daysCount; d++) {
+                const daySum = getDayTotal(year, monthIndex, d);
+                if (daySum > 0) {
+                    totalTaka += daySum;
+                    activeDays++;
+                }
+            }
+            return { totalTaka, activeDays, daysCount };
+        }
+
+        function getYearTotal(year) {
+            let total = 0;
+            for (let m = 0; m < 12; m++) {
+                total += getMonthStats(year, m).totalTaka;
+            }
+            return total;
+        }
+
+        // ============================================================================
+        // ACCOUNT AUTHENTICATION & CROSS-DEVICE CLOUD SYNC (FIRESTORE)
+        // ============================================================================
+        function sanitizeEmailKey(email) {
+            return email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+        }
+
+        async function simpleHash(str) {
+            const buf = new TextEncoder().encode(str + "_taka_salt_2026");
+            const digest = await crypto.subtle.digest('SHA-256', buf);
+            return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function showAuthFeedback(msg, isError = true) {
+            const box = document.getElementById('auth-feedback');
+            box.classList.remove('hidden', 'bg-red-500/15', 'text-red-700', 'dark:text-red-300', 'bg-emeraldBrand-500/20', 'text-emeraldBrand-900', 'dark:text-emeraldBrand-200');
+            if (isError) {
+                box.classList.add('bg-red-500/15', 'text-red-700', 'dark:text-red-300');
+            } else {
+                box.classList.add('bg-emeraldBrand-500/20', 'text-emeraldBrand-900', 'dark:text-emeraldBrand-200');
+            }
+            box.textContent = msg;
+        }
+
+        async function handleAuthSubmit(event) {
+            event.preventDefault();
+            const emailInput = document.getElementById('auth-email').value.trim().toLowerCase();
+            const passwordInput = document.getElementById('auth-password').value;
+
+            if (!emailInput || !passwordInput) return;
+
+            const btn = document.getElementById('auth-submit-btn');
+            btn.disabled = true;
+
+            try {
+                const accountKey = sanitizeEmailKey(emailInput);
+                const passHash = await simpleHash(passwordInput);
+
+                if (state.firebaseReady && auth.currentUser && db) {
+                    // Use strict Firestore public collection path so the user can log into the same account from ANY device
+                    const accountRef = doc(db, 'artifacts', appId, 'public', 'data', 'taka_accounts', accountKey);
+                    const snap = await getDoc(accountRef);
+
+                    if (state.authMode === 'signup') {
+                        if (snap.exists()) {
+                            showAuthFeedback(
+                                state.lang === 'bn'
+                                    ? "এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট খোলা আছে। অনুগ্রহ করে 'লগ ইন' ট্যাব ব্যবহার করুন।"
+                                    : "An account with this email already exists. Please switch to 'Log In'.",
+                                true
+                            );
+                            btn.disabled = false;
+                            return;
+                        }
+                        const initialExpenses = {};
+                        await setDoc(accountRef, {
+                            email: emailInput,
+                            passwordHash: passHash,
+                            expensesJson: JSON.stringify(initialExpenses),
+                            updatedAt: Date.now()
+                        });
+                        activateAccountSession(emailInput, accountKey, initialExpenses);
+                    } else {
+                        // Log In Mode
+                        if (!snap.exists()) {
+                            showAuthFeedback(
+                                state.lang === 'bn'
+                                    ? "এই ইমেইলে কোনো অ্যাকাউন্ট পাওয়া যায়নি। প্রথমে 'নতুন অ্যাকাউন্ট' তৈরি করুন।"
+                                    : "No account found with this email. Please click 'Create Account' first.",
+                                true
+                            );
+                            btn.disabled = false;
+                            return;
+                        }
+                        const data = snap.data();
+                        if (data.passwordHash !== passHash) {
+                            showAuthFeedback(
+                                state.lang === 'bn'
+                                    ? "পাসওয়ার্ড সঠিক নয়। আবার চেষ্টা করুন।"
+                                    : "Incorrect password. Please try again.",
+                                true
+                            );
+                            btn.disabled = false;
+                            return;
+                        }
+                        const parsedExpenses = data.expensesJson ? JSON.parse(data.expensesJson) : {};
+                        activateAccountSession(emailInput, accountKey, parsedExpenses);
+                    }
+                } else {
+                    // Fallback in-memory session if offline
+                    activateAccountSession(emailInput, accountKey, state.expensesByDate || {});
+                }
+            } catch (err) {
+                console.error("Auth error:", err);
+                showAuthFeedback("Could not complete request. Please try again.", true);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function subscribeToAccountCloudChanges(accountKey) {
+            if (state.unsubscribeAccountListener) {
+                state.unsubscribeAccountListener();
+                state.unsubscribeAccountListener = null;
+            }
+            if (!state.firebaseReady || !auth.currentUser || !db) return;
+
+            const accountRef = doc(db, 'artifacts', appId, 'public', 'data', 'taka_accounts', accountKey);
+            state.unsubscribeAccountListener = onSnapshot(
+                accountRef,
+                (snap) => {
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        if (data.expensesJson) {
+                            try {
+                                state.expensesByDate = JSON.parse(data.expensesJson);
+                                renderCurrentView();
+                            } catch (e) {
+                                console.error("Parse error:", e);
+                            }
+                        }
+                    }
+                },
+                (err) => {
+                    console.warn("Realtime listener error:", err);
+                }
+            );
+        }
+
+        async function saveExpensesToCloud() {
+            if (!state.currentAccount) return;
+            if (!state.firebaseReady || !auth.currentUser || !db) return;
+
+            try {
+                const accountRef = doc(db, 'artifacts', appId, 'public', 'data', 'taka_accounts', state.currentAccount.accountKey);
+                await setDoc(
+                    accountRef,
+                    {
+                        expensesJson: JSON.stringify(state.expensesByDate),
+                        updatedAt: Date.now()
+                    },
+                    { merge: true }
+                );
+            } catch (err) {
+                console.error("Error syncing Taka ledger to cloud:", err);
+            }
+        }
+
+        function activateAccountSession(email, accountKey, expensesData) {
+            state.currentAccount = { email, accountKey };
+            state.expensesByDate = expensesData || {};
+            document.getElementById('auth-feedback').classList.add('hidden');
+
+            // Update Header & Home UI
+            document.getElementById('user-Session-pill').classList.remove('hidden');
+            document.getElementById('user-Session-pill').classList.add('flex');
+            document.getElementById('header-user-email').textContent = email;
+            document.getElementById('home-active-email').textContent = email;
+            document.getElementById('home-auth-form-panel').classList.add('hidden');
+            document.getElementById('home-logged-in-panel').classList.remove('hidden');
+
+            subscribeToAccountCloudChanges(accountKey);
+            navigate('months');
+        }
+
+        async function loginDemoAccount() {
+            const demoEmail = "demo@trackmytaka.com";
+            const accountKey = sanitizeEmailKey(demoEmail);
+            const y = state.selectedYear;
+            const m = state.selectedMonth;
+
+            // Create realistic sample Taka data for the current month so the user immediately sees totals beside months & days
+            const sampleData = {};
+            const d1 = makeDateKey(y, m, 1);
+            const d2 = makeDateKey(y, m, 5);
+            const dToday = makeDateKey(y, m, state.selectedDay);
+
+            sampleData[d1] = [
+                { id: 's1', amount: 1250, note: 'Monthly grocery & rice', categoryId: 'bazaar', createdAt: Date.now() - 86400000 * 5 },
+                { id: 's2', amount: 120, note: 'Morning rickshaw & tea', categoryId: 'transport', createdAt: Date.now() - 86400000 * 5 }
+            ];
+            sampleData[d2] = [
+                { id: 's3', amount: 2400, note: 'Internet & electricity bill', categoryId: 'bills', createdAt: Date.now() - 86400000 * 2 }
+            ];
+            sampleData[dToday] = [
+                { id: 's4', amount: 450, note: 'Fresh vegetables & fish bazaar', categoryId: 'bazaar', createdAt: Date.now() - 7200000 },
+                { id: 's5', amount: 80, note: 'Rickshaw fare', categoryId: 'transport', createdAt: Date.now() - 3600000 }
+            ];
+
+            if (state.firebaseReady && auth.currentUser && db) {
+                try {
+                    const accountRef = doc(db, 'artifacts', appId, 'public', 'data', 'taka_accounts', accountKey);
+                    const snap = await getDoc(accountRef);
+                    if (snap.exists() && snap.data().expensesJson) {
+                        const existing = JSON.parse(snap.data().expensesJson);
+                        if (Object.keys(existing).length > 0) {
+                            activateAccountSession(demoEmail, accountKey, existing);
+                            return;
+                        }
+                    }
+                    const passHash = await simpleHash("demo1234");
+                    await setDoc(accountRef, {
+                        email: demoEmail,
+                        passwordHash: passHash,
+                        expensesJson: JSON.stringify(sampleData),
+                        updatedAt: Date.now()
+                    });
+                } catch (e) {
+                    console.warn("Demo cloud save fallback:", e);
+                }
+            }
+
+            activateAccountSession(demoEmail, accountKey, sampleData);
+        }
+
+        function logoutAccount() {
+            if (state.unsubscribeAccountListener) {
+                state.unsubscribeAccountListener();
+                state.unsubscribeAccountListener = null;
+            }
+            state.currentAccount = null;
+            state.expensesByDate = {};
+            document.getElementById('user-Session-pill').classList.add('hidden');
+            document.getElementById('home-auth-form-panel').classList.remove('hidden');
+            document.getElementById('home-logged-in-panel').classList.add('hidden');
+            document.getElementById('auth-password').value = '';
+            navigate('home');
+        }
+
+        function setAuthMode(mode) {
+            state.authMode = mode;
+            const tabLogin = document.getElementById('tab-login');
+            const tabSignup = document.getElementById('tab-signup');
+            const helper = document.getElementById('auth-helper-desc');
+            const submitText = document.getElementById('auth-submit-text');
+            const dict = I18N[state.lang];
+
+            document.getElementById('auth-feedback').classList.add('hidden');
+
+            if (mode === 'login') {
+                tabLogin.className = "py-2.5 rounded-xl font-extrabold text-sm transition-all bg-emeraldBrand-900 text-creme-50 dark:bg-emeraldBrand-400 dark:text-obsidian-950 shadow";
+                tabSignup.className = "py-2.5 rounded-xl font-extrabold text-sm transition-all text-emeraldBrand-900 dark:text-emeraldBrand-300";
+                helper.textContent = dict.authHelperLogin;
+                submitText.textContent = dict.loginSubmitBtn;
+            } else {
+                tabSignup.className = "py-2.5 rounded-xl font-extrabold text-sm transition-all bg-emeraldBrand-900 text-creme-50 dark:bg-emeraldBrand-400 dark:text-obsidian-950 shadow";
+                tabLogin.className = "py-2.5 rounded-xl font-extrabold text-sm transition-all text-emeraldBrand-900 dark:text-emeraldBrand-300";
+                helper.textContent = dict.authHelperSignup;
+                submitText.textContent = dict.signupSubmitBtn;
+            }
+        }
+
+        // ============================================================================
+        // NAVIGATION: HOME -> MONTHS -> DAYS -> DAY AMOUNT INPUT
+        // ============================================================================
+        function navigate(targetView) {
+            // Require login for Months, Days, and Day Input pages (or auto-prompt on Home)
+            if (targetView !== 'home' && !state.currentAccount) {
+                state.view = 'home';
+                showAuthFeedback(
+                    state.lang === 'bn'
+                        ? "মাস ও প্রতিদিনের ক্যালেন্ডার দেখতে অনুগ্রহ করে লগইন করুন বা ১-ক্লিকে ডেমো অ্যাকাউন্ট খুলুন।"
+                        : "Please log in or click '1-Click Demo Account' to open your Months Calendar.",
+                    false
+                );
+            } else {
+                state.view = targetView;
+            }
+
+            // Hide all sections
+            ['home', 'months', 'days', 'day-input'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+            });
+
+            // Show active section
+            document.getElementById(`view-${state.view}`).classList.remove('hidden');
+
+            // Update Breadcrumb visibility
+            const bcBar = document.getElementById('breadcrumb-bar');
+            if (state.view === 'home') {
+                bcBar.classList.add('hidden');
+            } else {
+                bcBar.classList.remove('hidden');
+                updateBreadcrumbs();
+            }
+
+            renderCurrentView();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateBreadcrumbs() {
+            const dict = I18N[state.lang];
+            const bcDaysSep = document.getElementById('bc-days-sep');
+            const bcDays = document.getElementById('bc-days');
+            const bcDaysLabel = document.getElementById('bc-days-label');
+            const bcInputSep = document.getElementById('bc-input-sep');
+            const bcInput = document.getElementById('bc-input');
+            const bcInputLabel = document.getElementById('bc-input-label');
+
+            const monthName = dict.months[state.selectedMonth];
+            const yearStr = toLocalizedDigits(state.selectedYear);
+
+            if (state.view === 'months') {
+                bcDaysSep.classList.add('hidden');
+                bcDays.classList.add('hidden');
+                bcInputSep.classList.add('hidden');
+                bcInput.classList.add('hidden');
+            } else if (state.view === 'days') {
+                bcDaysSep.classList.remove('hidden');
+                bcDays.classList.remove('hidden');
+                bcDays.classList.add('inline-flex');
+                bcDaysLabel.textContent = `${monthName} ${yearStr}`;
+                bcInputSep.classList.add('hidden');
+                bcInput.classList.add('hidden');
+            } else if (state.view === 'day-input') {
+                bcDaysSep.classList.remove('hidden');
+                bcDays.classList.remove('hidden');
+                bcDays.classList.add('inline-flex');
+                bcDaysLabel.textContent = `${monthName} ${yearStr}`;
+                bcInputSep.classList.remove('hidden');
+                bcInput.classList.remove('hidden');
+                bcInput.classList.add('inline-flex');
+                bcInputLabel.textContent = `${toLocalizedDigits(state.selectedDay)} ${monthName}`;
+            }
+        }
+
+        // ============================================================================
+        // RENDERERS FOR EACH PAGE
+        // ============================================================================
+        function renderCurrentView() {
+            if (state.view === 'months') {
+                renderMonthsPage();
+            } else if (state.view === 'days') {
+                renderDaysPage();
+            } else if (state.view === 'day-input') {
+                renderDayInputPage();
+            }
+            lucide.createIcons();
+        }
+
+        // 1. RENDER MONTHS PAGE (Shows Total Taka of the Month BESIDE the Month Name)
+        function renderMonthsPage() {
+            const dict = I18N[state.lang];
+            document.getElementById('months-year-label').textContent = toLocalizedDigits(state.selectedYear);
+            document.getElementById('months-year-total').textContent = formatTaka(getYearTotal(state.selectedYear));
+
+            const grid = document.getElementById('months-grid');
+            grid.innerHTML = '';
+
+            for (let m = 0; m < 12; m++) {
+                const stats = getMonthStats(state.selectedYear, m);
+                const monthName = dict.months[m];
+                const isCurrentMonth = (state.selectedYear === now.getFullYear() && m === now.getMonth());
+
+                const card = document.createElement('div');
+                card.onclick = () => {
+                    state.selectedMonth = m;
+                    navigate('days');
+                };
+                card.className = `rounded-3xl overflow-hidden glass-card-light dark:glass-card-dark card-surface cursor-pointer group border-2 ${
+                    isCurrentMonth
+                        ? 'border-emeraldBrand-700 dark:border-emeraldBrand-400 ring-2 ring-emeraldBrand-500/30'
+                        : 'border-emeraldBrand-800/15 dark:border-emeraldBrand-400/15'
+                }`;
+
+                card.innerHTML = `
+                    <div class="h-40 relative overflow-hidden">
+                        <img src="${MONTH_IMAGES[m]}" 
+                             alt="${monthName}" 
+                             onerror="this.src='https://placehold.co/600x350/1B4332/FDFBF7?text=${encodeURIComponent(monthName)}'"
+                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-t from-obsidian-950/90 via-obsidian-950/35 to-transparent"></div>
+                        
+                        <div class="absolute top-3 left-3 px-3 py-1 rounded-full bg-obsidian-950/70 backdrop-blur-md text-emeraldBrand-300 text-xs font-extrabold border border-emeraldBrand-400/30">
+                            ${toLocalizedDigits(stats.daysCount)} ${dict.daysCountLabel}
+                        </div>
+
+                        ${isCurrentMonth ? `
+                            <div class="absolute top-3 right-3 px-3 py-1 rounded-full bg-emeraldBrand-500 text-obsidian-950 text-xs font-extrabold shadow">
+                                ${dict.todayBadge}
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="p-5 sm:p-6">
+                        <!-- Month Name & Total Taka Spent BESIDE the Month Name -->
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <h3 class="text-2xl font-extrabold text-emeraldBrand-950 dark:text-white group-hover:text-emeraldBrand-700 dark:group-hover:text-emeraldBrand-300 transition-colors">
+                                    ${monthName}
+                                </h3>
+                                <p class="text-xs font-bold text-emeraldBrand-700 dark:text-emeraldBrand-400 mt-0.5">
+                                    ${toLocalizedDigits(stats.activeDays)} ${dict.activeDaysLabel}
+                                </p>
+                            </div>
+
+                            <!-- Total Taka Amount Beside Month -->
+                            <div class="px-4 py-2.5 rounded-2xl ${
+                                stats.totalTaka > 0
+                                    ? 'bg-emeraldBrand-900 text-creme-50 dark:bg-emeraldBrand-400 dark:text-obsidian-950 shadow-md'
+                                    : 'bg-creme-200/80 dark:bg-obsidian-800 text-emeraldBrand-900 dark:text-emeraldBrand-300'
+                            } font-extrabold text-lg sm:text-xl whitespace-nowrap">
+                                ${formatTaka(stats.totalTaka)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            }
+        }
+
+        // 2. RENDER DAYS PAGE (Accurate Calendar + Total Taka BESIDE Each Date)
+        function renderDaysPage() {
+            const dict = I18N[state.lang];
+            const year = state.selectedYear;
+            const month = state.selectedMonth;
+            const monthName = dict.months[month];
+
+            // Header image & titles
+            document.getElementById('days-header-img').src = MONTH_IMAGES[month];
+            document.getElementById('days-month-title').textContent = `${monthName} ${toLocalizedDigits(year)}`;
+
+            const monthStats = getMonthStats(year, month);
+            document.getElementById('days-month-total-badge').textContent = formatTaka(monthStats.totalTaka);
+
+            // Render Weekday headers
+            const weekdaysHeader = document.getElementById('weekdays-header');
+            weekdaysHeader.innerHTML = dict.weekdaysShort.map(dayName => `<div>${dayName}</div>`).join('');
+
+            // Render Accurate Calendar Days
+            const daysGrid = document.getElementById('days-grid');
+            daysGrid.innerHTML = '';
+
+            const firstWeekday = getFirstWeekdayOfMonth(year, month);
+            const totalDays = getDaysInMonth(year, month);
+
+            // Leading empty calendar cells on desktop 7-column grid for accurate day-of-week alignment
+            for (let i = 0; i < firstWeekday; i++) {
+                const spacer = document.createElement('div');
+                spacer.className = "hidden lg:block rounded-2xl bg-creme-100/40 dark:bg-obsidian-900/40 border border-dashed border-emeraldBrand-800/10 dark:border-emeraldBrand-400/10 min-h-[135px]";
+                daysGrid.appendChild(spacer);
+            }
+
+            for (let d = 1; d <= totalDays; d++) {
+                const dayTotal = getDayTotal(year, month, d);
+                const weekdayIndex = new Date(year, month, d).getDay();
+                const weekdayShort = dict.weekdaysShort[weekdayIndex];
+                const isToday = (year === now.getFullYear() && month === now.getMonth() && d === now.getDate());
+                const thumbUrl = DAY_THUMBNAILS[(d + month) % DAY_THUMBNAILS.length];
+
+                const dayCard = document.createElement('div');
+                dayCard.onclick = () => {
+                    state.selectedDay = d;
+                    navigate('day-input');
+                };
+
+                dayCard.className = `rounded-2xl overflow-hidden glass-card-light dark:glass-card-dark card-surface cursor-pointer group flex flex-col justify-between border-2 transition-all ${
+                    isToday
+                        ? 'border-emeraldBrand-700 dark:border-emeraldBrand-400 ring-2 ring-emeraldBrand-500/30'
+                        : dayTotal > 0
+                        ? 'border-emeraldBrand-700/40 dark:border-emeraldBrand-400/40'
+                        : 'border-emeraldBrand-800/15 dark:border-emeraldBrand-400/15'
+                }`;
+
+                dayCard.innerHTML = `
+                    <!-- Subtle Visual Image Strip on Every Day Card -->
+                    <div class="h-10 relative overflow-hidden">
+                        <img src="${thumbUrl}" alt="Day visual" class="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-r from-emeraldBrand-950/85 via-emeraldBrand-900/65 to-transparent flex items-center justify-between px-3">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-emeraldBrand-200">
+                                ${weekdayShort}
+                            </span>
+                            ${isToday ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emeraldBrand-400 text-obsidian-950">${dict.todayBadge}</span>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Date & Total Taka Amount BESIDE the Date -->
+                    <div class="p-3.5 flex items-center justify-between gap-2">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-2xl sm:text-3xl font-extrabold text-emeraldBrand-950 dark:text-white group-hover:text-emeraldBrand-700 dark:group-hover:text-emeraldBrand-300">
+                                ${toLocalizedDigits(d)}
+                            </span>
+                        </div>
+
+                        <!-- Total Taka Amount Beside Date -->
+                        <div class="px-2.5 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm whitespace-nowrap ${
+                            dayTotal > 0
+                                ? 'bg-emeraldBrand-900 text-creme-50 dark:bg-emeraldBrand-400 dark:text-obsidian-950 shadow-sm'
+                                : 'bg-creme-200/70 dark:bg-obsidian-800 text-emeraldBrand-800/75 dark:text-emeraldBrand-300/70'
+                        }">
+                            ${formatTaka(dayTotal)}
+                        </div>
+                    </div>
+                `;
+
+                daysGrid.appendChild(dayCard);
+            }
+        }
+
+        // 3. RENDER DAY AMOUNT INPUT PAGE (Category Images + Daily Taka Input + Sum Shown Below)
+        function renderDayInputPage() {
+            const dict = I18N[state.lang];
+            const y = state.selectedYear;
+            const m = state.selectedMonth;
+            const d = state.selectedDay;
+
+            const weekdayIdx = new Date(y, m, d).getDay();
+            document.getElementById('input-day-weekday').textContent = dict.weekdaysFull[weekdayIdx];
+            document.getElementById('input-day-full-date').textContent = `${toLocalizedDigits(d)} ${dict.months[m]} ${toLocalizedDigits(y)}`;
+
+            // Render Visual Category Selector Cards with External Images
+            const catContainer = document.getElementById('category-chips');
+            catContainer.innerHTML = '';
+            EXPENSE_CATEGORIES.forEach(cat => {
+                const isSelected = state.selectedCategory === cat.id;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.onclick = () => {
+                    state.selectedCategory = cat.id;
+                    renderDayInputPage();
+                };
+                btn.className = `rounded-2xl overflow-hidden text-left border-2 transition-all group ${
+                    isSelected
+                        ? 'border-emeraldBrand-900 dark:border-emeraldBrand-400 ring-2 ring-emeraldBrand-500/40 scale-[1.02]'
+                        : 'border-emeraldBrand-800/15 dark:border-emeraldBrand-400/15 opacity-80 hover:opacity-100'
+                }`;
+                btn.innerHTML = `
+                    <div class="h-14 relative overflow-hidden">
+                        <img src="${cat.img}" alt="${cat.en}" class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end p-2">
+                            <span class="text-white text-xs font-extrabold leading-tight">
+                                ${state.lang === 'bn' ? cat.bn : cat.en}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                catContainer.appendChild(btn);
+            });
+
+            // Render Today's Recorded Expenses List
+            const dateKey = makeDateKey(y, m, d);
+            const entries = state.expensesByDate[dateKey] || [];
+            const listEl = document.getElementById('day-entries-list');
+            const countEl = document.getElementById('day-entries-count');
+
+            countEl.textContent = `${toLocalizedDigits(entries.length)} ${dict.entriesWord}`;
+            listEl.innerHTML = '';
+
+            if (entries.length === 0) {
+                listEl.innerHTML = `
+                    <div class="p-8 rounded-2xl bg-creme-100/70 dark:bg-obsidian-900/60 border border-dashed border-emeraldBrand-800/20 dark:border-emeraldBrand-400/20 text-center space-y-2">
+                        <p class="text-base font-bold text-emeraldBrand-800 dark:text-emeraldBrand-300">
+                            ${dict.noEntriesYet}
+                        </p>
+                    </div>
+                `;
+            } else {
+                entries.forEach(item => {
+                    const catObj = EXPENSE_CATEGORIES.find(c => c.id === item.categoryId) || EXPENSE_CATEGORIES[5];
+                    const catTitle = state.lang === 'bn' ? catObj.bn : catObj.en;
+
+                    const row = document.createElement('div');
+                    row.className = "p-4 rounded-2xl bg-creme-100/90 dark:bg-obsidian-900/90 border border-emeraldBrand-800/15 dark:border-emeraldBrand-400/20 flex items-center justify-between gap-4";
+                    row.innerHTML = `
+                        <div class="flex items-center gap-3.5 min-w-0">
+                            <img src="${catObj.img}" alt="${catTitle}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-emeraldBrand-700/30">
+                            <div class="min-w-0">
+                                <h4 class="font-extrabold text-base sm:text-lg text-emeraldBrand-950 dark:text-white truncate">
+                                    ${item.note || catTitle}
+                                </h4>
+                                <span class="text-xs font-bold text-emeraldBrand-700 dark:text-emeraldBrand-400">
+                                    ${catTitle}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            <span class="text-xl sm:text-2xl font-extrabold text-emeraldBrand-950 dark:text-emeraldBrand-300">
+                                ${formatTaka(item.amount)}
+                            </span>
+                            <button onclick="app.deleteExpense('${dateKey}', '${item.id}')" class="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:text-red-300 transition-colors" title="${dict.deleteBtn}">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    listEl.appendChild(row);
+                });
+            }
+
+            // Update Grand Total Sum of the Day Below
+            const dayTotal = getDayTotal(y, m, d);
+            const monthTotal = getMonthStats(y, m).totalTaka;
+            document.getElementById('day-grand-total-display').textContent = formatTaka(dayTotal);
+            document.getElementById('sum-box-month-context').textContent =
+                state.lang === 'bn'
+                    ? `${dict.months[m]} মাসের মোট খরচ এখন: ${formatTaka(monthTotal)}`
+                    : `${dict.months[m]} Monthly Running Total: ${formatTaka(monthTotal)}`;
+        }
+
+        // ============================================================================
+        // EXPENSE ADDITION & DELETION HANDLERS
+        // ============================================================================
+        async function handleAddExpense(event) {
+            event.preventDefault();
+            const amountInput = document.getElementById('expense-amount');
+            const noteInput = document.getElementById('expense-note');
+
+            const val = parseFloat(amountInput.value);
+            if (isNaN(val) || val <= 0) return;
+
+            const dict = I18N[state.lang];
+            const catObj = EXPENSE_CATEGORIES.find(c => c.id === state.selectedCategory) || EXPENSE_CATEGORIES[5];
+            const defaultNote = state.lang === 'bn' ? catObj.bn : catObj.en;
+
+            const dateKey = makeDateKey(state.selectedYear, state.selectedMonth, state.selectedDay);
+            if (!state.expensesByDate[dateKey]) {
+                state.expensesByDate[dateKey] = [];
+            }
+
+            state.expensesByDate[dateKey].push({
+                id: 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                amount: val,
+                note: noteInput.value.trim() || defaultNote,
+                categoryId: state.selectedCategory,
+                createdAt: Date.now()
+            });
+
+            amountInput.value = '';
+            noteInput.value = '';
+
+            renderDayInputPage();
+            lucide.createIcons();
+            await saveExpensesToCloud();
+        }
+
+        async function deleteExpense(dateKey, expenseId) {
+            if (!state.expensesByDate[dateKey]) return;
+            state.expensesByDate[dateKey] = state.expensesByDate[dateKey].filter(item => item.id !== expenseId);
+            renderDayInputPage();
+            lucide.createIcons();
+            await saveExpensesToCloud();
+        }
+
+        // ============================================================================
+        // DATE, YEAR, THEME & LANGUAGE CONTROLS
+        // ============================================================================
+        function changeYear(delta) {
+            state.selectedYear += delta;
+            renderMonthsPage();
+            lucide.createIcons();
+        }
+
+        function stepDay(delta) {
+            const dt = new Date(state.selectedYear, state.selectedMonth, state.selectedDay + delta);
+            state.selectedYear = dt.getFullYear();
+            state.selectedMonth = dt.getMonth();
+            state.selectedDay = dt.getDate();
+            updateBreadcrumbs();
+            renderDayInputPage();
+            lucide.createIcons();
+        }
+
+        function toggleTheme() {
+            const htmlEl = document.documentElement;
+            if (state.theme === 'light') {
+                state.theme = 'dark';
+                htmlEl.classList.remove('light');
+                htmlEl.classList.add('dark');
+            } else {
+                state.theme = 'light';
+                htmlEl.classList.remove('dark');
+                htmlEl.classList.add('light');
+            }
+        }
+
+        function toggleLanguage() {
+            state.lang = state.lang === 'en' ? 'bn' : 'en';
+            applyTranslations();
+        }
+
+        function applyTranslations() {
+            const dict = I18N[state.lang];
+
+            // Top right language button shows opposite language option clearly
+            document.getElementById('lang-toggle-label').textContent = state.lang === 'en' ? 'বাংলা' : 'English';
+            document.getElementById('nav-brand-title').textContent = dict.appTitleBig;
+            document.getElementById('nav-brand-subtitle').textContent = dict.navSubtitle;
+
+            // Translate all [data-i18n] elements
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) {
+                    el.textContent = dict[key];
+                }
+            });
+
+            // Translate placeholders
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key]) {
+                    el.setAttribute('placeholder', dict[key]);
+                }
+            });
+
+            setAuthMode(state.authMode);
+            updateBreadcrumbs();
+            updateSyncIndicator(state.firebaseReady);
+            renderCurrentView();
+        }
+
+        function toggleGuideModal(show) {
+            const modal = document.getElementById('guide-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        // Expose handlers globally for inline HTML triggers
+        window.app = {
+            navigate,
+            toggleTheme,
+            toggleLanguage,
+            setAuthMode,
+            handleAuthSubmit,
+            loginDemoAccount,
+            logoutAccount,
+            changeYear,
+            stepDay,
+            handleAddExpense,
+            deleteExpense,
+            toggleGuideModal
+        };
+
+        // Initialize Icons, Translations & Cloud Backend on Load
+        window.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            applyTranslations();
+            await initCloudBackend();
+        });
+    </script>
+</body>
+</html>
