@@ -674,21 +674,25 @@
   <!-- ==========================================
        APPLICATION & CLOUD BACKEND LOGIC (Firebase Firestore + Multi-Device Sync)
        ========================================== -->
+  <!-- ==========================================
+       FIXED CLOUD BACKEND LOGIC (Direct Firestore Sync — No Auth Blocker)
+       ========================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // ============================================================================
-    // OPTIONAL: Paste your own Firebase  here when hosting on Vercel
+    // IMPORTANT: PASTE YOUR FIREBASE CONFIG KEYS BELOW!
     // ============================================================================
-    const CUSTOM_FIREBASE_CONFIG = {apiKey: "AIzaSyBDooWVu9hbM4ZBW0Q-MqSgcyf6CDZMKDk",
+    const CUSTOM_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBDooWVu9hbM4ZBW0Q-MqSgcyf6CDZMKDk",
   authDomain: "track-my-taka.firebaseapp.com",
   projectId: "track-my-taka",
   storageBucket: "track-my-taka.firebasestorage.app",
   messagingSenderId: "159025348514",
   appId: "1:159025348514:web:ba4ee46c2f013e8066bcfb",
-  measurementId: "G-4Q00TMW6L0"};
+  measurementId: "G-4Q00TMW6L0"
+    };
 
     // Curated External Unsplash Images for all 12 Calendar Months
     const MONTH_IMAGES = [
@@ -706,13 +710,12 @@
       "https://images.unsplash.com/photo-1512389142860-9c449e58a543?auto=format&fit=crop&w=700&q=80"  // Dec
     ];
 
-    // Full Bilingual Dictionary (English & Bangla)
     const I18N = {
       en: {
         appName: "Track My Taka",
         taglineMini: "Personal Daily & Monthly Taka Ledger",
         logoutBtn: "Logout",
-        cloudSynced: "Synced across devices",
+        cloudSynced: "Cloud Connected ✓",
         heroPill: "Mindful Wealth & Daily Taka Companion",
         heroTitleMain: "Track My Taka",
         heroTitleSub: "Every Taka Tells a Story. Make Yours Count.",
@@ -784,7 +787,7 @@
         appName: "ট্র্যাক মাই টাকা",
         taglineMini: "দৈনিক ও মাসিক টাকার ব্যক্তিগত হিসাব",
         logoutBtn: "লগ আউট",
-        cloudSynced: "সব ডিভাইসে সিঙ্ক করা",
+        cloudSynced: "ক্লাউড সংযুক্ত ✓",
         heroPill: "সচেতন সঞ্চয় ও প্রতিদিনের টাকার সঙ্গী",
         heroTitleMain: "Track My Taka",
         heroTitleSub: "প্রতিটি টাকার একটি গল্প আছে — আপনার হিসাব রাখুন সহজেই।",
@@ -854,30 +857,23 @@
       }
     };
 
-    // Application State
     const state = {
       lang: localStorage.getItem('tmt_lang') || 'en',
       theme: localStorage.getItem('tmt_theme') || 'light',
-      authMode: 'login', // 'login' | 'signup'
-      currentView: 'home', // 'home' | 'months' | 'days' | 'dayInput'
-      currentUser: null,   // { emailKey, email, passwordHash }
+      authMode: 'login',
+      currentView: 'home',
+      currentUser: null,
       selectedYear: new Date().getFullYear(),
-      selectedMonth: new Date().getMonth(), // 0 - 11
-      selectedDay: new Date().getDate(),    // 1 - 31
-      // expenses structure: { "YYYY-MM-DD": [ { id, amount, note, timestamp } ] }
+      selectedMonth: new Date().getMonth(),
+      selectedDay: new Date().getDate(),
       expenses: {},
       firebaseReady: false,
       firestoreDb: null,
-      firebaseAuth: null,
-      appId: 'track-my-taka-v1',
       unsubscribeSnapshot: null
     };
 
-    // Helper: Convert digits to Bengali numerals when language === 'bn'
     function formatNumber(num) {
-      const formatted = Number(num || 0).toLocaleString('en-IN', {
-        maximumFractionDigits: 2
-      });
+      const formatted = Number(num || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
       if (state.lang !== 'bn') return formatted;
       const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
       return formatted.replace(/\d/g, d => bnDigits[d]);
@@ -894,7 +890,6 @@
       return `৳ ${formatNumber(amount)}`;
     }
 
-    // Accurate Calendar Helpers
     function getDaysInMonth(year, monthIndex) {
       return new Date(year, monthIndex + 1, 0).getDate();
     }
@@ -941,7 +936,6 @@
       return sum;
     }
 
-    // Simple deterministic hash for password verification across devices
     function simpleHash(str) {
       let hash = 5381;
       for (let i = 0; i < str.length; i++) {
@@ -954,54 +948,62 @@
       return email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
     }
 
-    // ============================================================================
-    // CLOUD BACKEND INITIALIZATION (Firebase Firestore + LocalStorage Fallback)
-    // ============================================================================
-    async function initCloudBackend() {
-      try {
-        let config = CUSTOM_FIREBASE_CONFIG;
-        if (!config && typeof __firebase_config !== 'undefined' && __firebase_config) {
-          config = JSON.parse(__firebase_config);
-        }
-        if (typeof __app_id !== 'undefined' && __app_id) {
-          state.appId = __app_id;
-        }
-
-        if (config && config.apiKey) {
-          const fbApp = initializeApp(config);
-          state.firebaseAuth = getAuth(fbApp);
-          state.firestoreDb = getFirestore(fbApp);
-
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(state.firebaseAuth, __initial_auth_token);
-          } else {
-            await signInAnonymously(state.firebaseAuth);
-          }
-
-          onAuthStateChanged(state.firebaseAuth, (user) => {
-            if (user) {
-              state.firebaseReady = true;
-              if (state.currentUser) {
-                subscribeToAccountCloudData(state.currentUser.emailKey);
-              }
+    // Merge helper so existing laptop data automatically uploads to cloud without losing anything
+    function mergeExpenseObjects(cloudObj, localObj) {
+      const merged = { ...(cloudObj || {}) };
+      for (const [dateKey, localEntries] of Object.entries(localObj || {})) {
+        if (!merged[dateKey]) {
+          merged[dateKey] = localEntries;
+        } else {
+          const existingIds = new Set(merged[dateKey].map(item => item.id));
+          for (const entry of localEntries) {
+            if (!existingIds.has(entry.id)) {
+              merged[dateKey].push(entry);
             }
-          });
+          }
+        }
+      }
+      return merged;
+    }
+
+    // ============================================================================
+    // DIRECT FIRESTORE CONNECTION (No Anonymous Auth Required!)
+    // ============================================================================
+    function initCloudBackend() {
+      try {
+        if (
+          CUSTOM_FIREBASE_CONFIG &&
+          CUSTOM_FIREBASE_CONFIG.apiKey &&
+          !CUSTOM_FIREBASE_CONFIG.apiKey.includes("PASTE_YOUR")
+        ) {
+          const fbApp = initializeApp(CUSTOM_FIREBASE_CONFIG);
+          state.firestoreDb = getFirestore(fbApp);
+          state.firebaseReady = true;
+          updateCloudStatusBadge(true);
+        } else {
+          console.warn("Firebase config keys not pasted yet!");
+          updateCloudStatusBadge(false);
         }
       } catch (err) {
-        console.warn("Cloud backend running in local storage fallback mode:", err);
+        console.error("Firestore initialization error:", err);
+        updateCloudStatusBadge(false);
+      }
+    }
+
+    function updateCloudStatusBadge(isConnected) {
+      const syncText = document.getElementById('syncIndicatorText');
+      if (!syncText) return;
+      if (isConnected) {
+        syncText.textContent = I18N[state.lang].cloudSynced;
+        syncText.className = "text-takaGreen-700 dark:text-takaGreen-400 font-bold";
+      } else {
+        syncText.textContent = "Local Mode Only (Paste Firebase Config in index.html)";
+        syncText.className = "text-red-600 dark:text-red-400 font-bold";
       }
     }
 
     function getAccountDocRef(emailKey) {
-      return doc(
-        state.firestoreDb,
-        'artifacts',
-        state.appId,
-        'public',
-        'data',
-        'taka_accounts',
-        emailKey
-      );
+      return doc(state.firestoreDb, 'taka_accounts', emailKey);
     }
 
     function subscribeToAccountCloudData(emailKey) {
@@ -1018,7 +1020,8 @@
             const data = snap.data();
             if (data.expensesJson) {
               try {
-                state.expenses = JSON.parse(data.expensesJson);
+                const cloudExpenses = JSON.parse(data.expensesJson);
+                state.expenses = cloudExpenses;
                 saveLocalAccountCache(emailKey, state.expenses);
                 renderCurrentView();
               } catch (e) {
@@ -1028,7 +1031,7 @@
           }
         },
         (error) => {
-          console.warn("Realtime sync listener warning:", error);
+          console.error("Firestore read error (Check Firestore Rules):", error);
         }
       );
     }
@@ -1037,11 +1040,11 @@
       if (!state.currentUser) return;
       const emailKey = state.currentUser.emailKey;
 
-      // Save immediately to local cache for instant responsiveness
+      // Save to local cache
       saveLocalAccountCache(emailKey, state.expenses);
 
-      // Sync to Cloud Firestore so user can log in from any other device
-      if (state.firebaseReady && state.firestoreDb && state.firebaseAuth?.currentUser) {
+      // Save directly to Cloud Firestore
+      if (state.firebaseReady && state.firestoreDb) {
         try {
           const docRef = getAccountDocRef(emailKey);
           await setDoc(
@@ -1055,7 +1058,7 @@
             { merge: true }
           );
         } catch (err) {
-          console.warn("Cloud write fallback to local:", err);
+          console.error("Failed writing to Firestore:", err);
         }
       }
     }
@@ -1078,21 +1081,33 @@
     // UI & VIEW CONTROLLER
     // ============================================================================
     const app = {
-      init() {
+      async init() {
         this.applyTheme();
         this.applyLanguage();
         initCloudBackend();
 
-        // Restore active session if previously logged in
         const savedSession = localStorage.getItem('tmt_active_user');
         if (savedSession) {
           try {
             const parsed = JSON.parse(savedSession);
             if (parsed && parsed.emailKey) {
               state.currentUser = parsed;
-              state.expenses = loadLocalAccountCache(parsed.emailKey);
+              const localData = loadLocalAccountCache(parsed.emailKey);
+              state.expenses = localData;
               this.updateHeaderUserUI();
               this.goToMonthsView();
+
+              // Sync with cloud immediately on boot without wiping either side
+              if (state.firebaseReady && state.firestoreDb) {
+                const snap = await getDoc(getAccountDocRef(parsed.emailKey));
+                if (snap.exists() && snap.data().expensesJson) {
+                  const cloudData = JSON.parse(snap.data().expensesJson);
+                  state.expenses = mergeExpenseObjects(cloudData, localData);
+                }
+                await persistAccountExpenses();
+                subscribeToAccountCloudData(parsed.emailKey);
+                renderCurrentView();
+              }
               return;
             }
           } catch (e) {
@@ -1103,7 +1118,6 @@
         this.showHomeView();
       },
 
-      // Theme Toggle (Light: Creme & Emerald / Dark: Obsidian Black & Light Green)
       toggleTheme() {
         state.theme = state.theme === 'light' ? 'dark' : 'light';
         localStorage.setItem('tmt_theme', state.theme);
@@ -1128,7 +1142,6 @@
         }
       },
 
-      // Language Toggle (English / বাংলা)
       toggleLanguage() {
         state.lang = state.lang === 'en' ? 'bn' : 'en';
         localStorage.setItem('tmt_lang', state.lang);
@@ -1145,17 +1158,15 @@
           }
         });
 
-        // Update top-right language toggle badge
         const langBadge = document.getElementById('langBadgeText');
         if (langBadge) {
           langBadge.textContent = state.lang === 'en' ? 'বাংলা' : 'English';
         }
 
-        // Update Auth card dynamic text
+        updateCloudStatusBadge(state.firebaseReady);
         this.switchAuthTab(state.authMode);
       },
 
-      // Auth Tab Switcher (Log In vs Create Account)
       switchAuthTab(mode) {
         state.authMode = mode;
         const dict = I18N[state.lang];
@@ -1195,7 +1206,7 @@
         box.innerHTML = `<span>${message}</span>`;
       },
 
-      // Account Login / Sign Up Handler with Cloud Sync
+      // Fixed Login & Signup Handler: Downloads Cloud Data FIRST and merges with any local data
       async handleAuthSubmit(event) {
         event.preventDefault();
         const email = document.getElementById('authEmailInput').value.trim().toLowerCase();
@@ -1207,80 +1218,47 @@
         submitBtn.disabled = true;
 
         try {
-          // 1. Check Cloud Firestore first if available
           let cloudAccount = null;
-          if (state.firebaseReady && state.firestoreDb && state.firebaseAuth?.currentUser) {
+          if (state.firebaseReady && state.firestoreDb) {
             try {
               const snap = await getDoc(getAccountDocRef(emailKey));
               if (snap.exists()) {
                 cloudAccount = snap.data();
               }
             } catch (err) {
-              console.warn("Cloud lookup error, checking local:", err);
+              console.error("Cloud lookup failed:", err);
             }
           }
 
-          // 2. Check Local Registry fallback
-          const localAccountsRaw = localStorage.getItem('tmt_accounts_registry') || '{}';
-          const localAccounts = JSON.parse(localAccountsRaw);
+          const localAccounts = JSON.parse(localStorage.getItem('tmt_accounts_registry') || '{}');
           const existingAccount = cloudAccount || localAccounts[emailKey];
 
-          if (state.authMode === 'signup') {
-            if (existingAccount && existingAccount.passwordHash && existingAccount.passwordHash !== passHash) {
-              this.showAuthAlert(
-                state.lang === 'bn'
-                  ? "এই ইমেইল দিয়ে ইতোমধ্যে একটি অ্যাকাউন্ট আছে। অনুগ্রহ করে 'লগ ইন' ট্যাব ব্যবহার করুন।"
-                  : "An account with this email already exists. Please switch to Log In."
-              );
-              submitBtn.disabled = false;
-              return;
-            }
-
-            const initialExpenses = existingAccount?.expensesJson
-              ? JSON.parse(existingAccount.expensesJson)
-              : loadLocalAccountCache(emailKey);
-
-            localAccounts[emailKey] = { email, passwordHash: passHash };
-            localStorage.setItem('tmt_accounts_registry', JSON.stringify(localAccounts));
-
-            state.currentUser = { emailKey, email, passwordHash: passHash };
-            state.expenses = initialExpenses || {};
-            localStorage.setItem('tmt_active_user', JSON.stringify(state.currentUser));
-
-            await persistAccountExpenses();
-            subscribeToAccountCloudData(emailKey);
-            this.updateHeaderUserUI();
-            this.goToMonthsView();
-          } else {
-            // Log In Mode
-            if (existingAccount) {
-              if (existingAccount.passwordHash && existingAccount.passwordHash !== passHash) {
-                this.showAuthAlert(
-                  state.lang === 'bn'
-                    ? "পাসওয়ার্ড সঠিক নয়। অনুগ্রহ করে আবার চেষ্টা করুন।"
-                    : "Incorrect password for this account. Please try again."
-                );
-                submitBtn.disabled = false;
-                return;
-              }
-              state.expenses = existingAccount.expensesJson
-                ? JSON.parse(existingAccount.expensesJson)
-                : loadLocalAccountCache(emailKey);
-            } else {
-              // Seamless first-time login creates & syncs the account automatically
-              localAccounts[emailKey] = { email, passwordHash: passHash };
-              localStorage.setItem('tmt_accounts_registry', JSON.stringify(localAccounts));
-              state.expenses = loadLocalAccountCache(emailKey);
-            }
-
-            state.currentUser = { emailKey, email, passwordHash: passHash };
-            localStorage.setItem('tmt_active_user', JSON.stringify(state.currentUser));
-
-            await persistAccountExpenses();
-            subscribeToAccountCloudData(emailKey);
-            this.updateHeaderUserUI();
-            this.goToMonthsView();
+          if (existingAccount && existingAccount.passwordHash && existingAccount.passwordHash !== passHash) {
+            this.showAuthAlert(
+              state.lang === 'bn'
+                ? "পাসওয়ার্ড সঠিক নয়। অনুগ্রহ করে সঠিক পাসওয়ার্ড দিন।"
+                : "Incorrect password for this account. Please try again."
+            );
+            submitBtn.disabled = false;
+            return;
           }
+
+          const cloudExpenses = cloudAccount?.expensesJson ? JSON.parse(cloudAccount.expensesJson) : {};
+          const localExpenses = loadLocalAccountCache(emailKey);
+
+          // Safely combine cloud & local data so nothing is ever lost or overwritten with empty {}
+          state.expenses = mergeExpenseObjects(cloudExpenses, localExpenses);
+
+          localAccounts[emailKey] = { email, passwordHash: passHash };
+          localStorage.setItem('tmt_accounts_registry', JSON.stringify(localAccounts));
+
+          state.currentUser = { emailKey, email, passwordHash: passHash };
+          localStorage.setItem('tmt_active_user', JSON.stringify(state.currentUser));
+
+          await persistAccountExpenses();
+          subscribeToAccountCloudData(emailKey);
+          this.updateHeaderUserUI();
+          this.goToMonthsView();
         } finally {
           submitBtn.disabled = false;
         }
@@ -1311,7 +1289,6 @@
         }
       },
 
-      // Navigation Flow: Home -> Months -> Days -> Day Amount Input
       navigateRoot() {
         if (state.currentUser) {
           this.goToMonthsView();
@@ -1372,7 +1349,6 @@
         }
       },
 
-      // Add Daily Taka Expense & Automatically Sum Below
       async handleAddExpense(event) {
         event.preventDefault();
         const amountEl = document.getElementById('expenseAmountInput');
@@ -1415,9 +1391,6 @@
       }
     };
 
-    // ============================================================================
-    // VIEW RENDERING ENGINE
-    // ============================================================================
     function renderCurrentView() {
       const viewHome = document.getElementById('viewHome');
       const viewMonths = document.getElementById('viewMonths');
@@ -1499,7 +1472,6 @@
       trail.innerHTML = html;
     }
 
-    // Render Months Page (Shows all 12 months with Total Taka Amount beside the month)
     function renderMonthsPage() {
       const dict = I18N[state.lang];
       document.getElementById('selectedYearDisplay').textContent = formatYearOrDay(state.selectedYear);
@@ -1520,13 +1492,9 @@
         cardsHtml += `
           <div onclick="app.goToDaysView(${m})" 
             class="glass-card-light rounded-3xl overflow-hidden cursor-pointer card-hover group flex flex-col justify-between ${isCurrentMonth ? 'ring-2 ring-takaGreen-500 dark:ring-takaGreen-400' : ''}">
-            
-            <!-- Month External Photograph Banner -->
             <div class="relative h-36 overflow-hidden">
               <img src="${MONTH_IMAGES[m]}" alt="${monthName}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
               <div class="absolute inset-0 bg-gradient-to-t from-obsidian-900/90 via-obsidian-900/35 to-transparent"></div>
-              
-              <!-- Top Badges -->
               <div class="absolute top-3 left-3 right-3 flex items-center justify-between">
                 <span class="px-2.5 py-1 rounded-lg bg-obsidian-900/75 text-creme-50 text-xs font-bold backdrop-blur-md">
                   ${formatYearOrDay(daysCount)} ${dict.daysOfMonthLabel}
@@ -1537,19 +1505,13 @@
                   </span>
                 ` : ''}
               </div>
-
-              <!-- MONTH NAME & TOTAL TAKA AMOUNT BESIDE THE MONTH -->
               <div class="absolute bottom-3 left-4 right-4 flex items-center justify-between gap-2">
-                <h3 class="text-2xl font-extrabold text-white tracking-tight">
-                  ${monthName}
-                </h3>
+                <h3 class="text-2xl font-extrabold text-white tracking-tight">${monthName}</h3>
                 <span class="px-3.5 py-1.5 rounded-xl font-extrabold text-base sm:text-lg shadow-md ${monthTotal > 0 ? 'bg-takaGreen-500 text-obsidian-900' : 'bg-obsidian-900/80 text-takaGreen-300 border border-takaGreen-400/30'}">
                   ${formatTaka(monthTotal)}
                 </span>
               </div>
             </div>
-
-            <!-- Card Footer Details -->
             <div class="p-5 flex items-center justify-between">
               <div class="text-xs sm:text-sm font-bold text-takaGreen-800/80 dark:text-takaGreen-300/80">
                 ${activeDays > 0 
@@ -1562,7 +1524,6 @@
                 <i data-lucide="arrow-right" class="w-4 h-4"></i>
               </div>
             </div>
-
           </div>
         `;
       }
@@ -1570,7 +1531,6 @@
       grid.innerHTML = cardsHtml;
     }
 
-    // Render Days Page (Shows accurate calendar dates with Total Taka Amount beside each date)
     function renderDaysPage() {
       const dict = I18N[state.lang];
       const monthName = dict.monthsNames[state.selectedMonth];
@@ -1581,24 +1541,17 @@
       document.getElementById('daysViewMonthTitle').textContent = `${monthName} ${yearStr}`;
       document.getElementById('daysViewMonthTotal').textContent = formatTaka(monthTotal);
 
-      // Render Weekday Header Row
       const weekdayRow = document.getElementById('weekdayHeaderGrid');
-      weekdayRow.innerHTML = dict.weekdaysShort
-        .map(dayName => `<div>${dayName}</div>`)
-        .join('');
+      weekdayRow.innerHTML = dict.weekdaysShort.map(dayName => `<div>${dayName}</div>`).join('');
 
-      // Render Accurate Calendar Days Grid
       const totalDays = getDaysInMonth(state.selectedYear, state.selectedMonth);
       const firstWeekday = getFirstWeekdayOfMonth(state.selectedYear, state.selectedMonth);
       const daysGrid = document.getElementById('daysCalendarGrid');
 
       const now = new Date();
-      const isThisMonthAndYear =
-        now.getFullYear() === state.selectedYear && now.getMonth() === state.selectedMonth;
+      const isThisMonthAndYear = now.getFullYear() === state.selectedYear && now.getMonth() === state.selectedMonth;
 
       let html = '';
-
-      // Leading empty calendar cells on desktop so dates align accurately with Sun-Sat
       for (let empty = 0; empty < firstWeekday; empty++) {
         html += `<div class="hidden lg:block rounded-2xl bg-creme-200/30 dark:bg-obsidian-800/30 border border-dashed border-takaGreen-700/10 dark:border-takaGreen-400/10 min-h-[120px]"></div>`;
       }
@@ -1616,11 +1569,7 @@
             class="glass-card-light rounded-2xl p-4 cursor-pointer card-hover flex flex-col justify-between min-h-[124px] relative overflow-hidden group ${
               isToday ? 'ring-2 ring-takaGreen-600 dark:ring-takaGreen-400' : ''
             } ${dayTotal > 0 ? 'bg-takaGreen-50/90 dark:bg-takaGreen-950/40' : ''}">
-            
-            <!-- Subtle decorative corner image thumb -->
             <img src="${MONTH_IMAGES[state.selectedMonth]}" alt="" class="w-12 h-12 rounded-full object-cover absolute -bottom-3 -right-3 opacity-15 group-hover:scale-125 transition-transform pointer-events-none" />
-
-            <!-- TOP ROW: DATE + TOTAL TAKA AMOUNT BESIDE THE DATE -->
             <div class="flex items-start justify-between gap-2">
               <div class="flex items-center gap-2">
                 <span class="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-base ${
@@ -1631,14 +1580,10 @@
                   ${formatYearOrDay(d)}
                 </span>
                 <div>
-                  <span class="text-xs font-bold text-takaGreen-700 dark:text-takaGreen-400 block leading-none">
-                    ${weekdayShort}
-                  </span>
+                  <span class="text-xs font-bold text-takaGreen-700 dark:text-takaGreen-400 block leading-none">${weekdayShort}</span>
                   ${isToday ? `<span class="text-[10px] font-extrabold uppercase text-takaGreen-600 dark:text-takaGreen-300">${state.lang === 'bn' ? 'আজ' : 'Today'}</span>` : ''}
                 </div>
               </div>
-
-              <!-- Total Taka Amount Beside the Date -->
               <span class="px-2.5 py-1 rounded-lg font-extrabold text-xs sm:text-sm ${
                 dayTotal > 0
                   ? 'bg-takaGreen-600 text-creme-50 dark:bg-takaGreen-400 dark:text-obsidian-900 shadow-sm'
@@ -1647,8 +1592,6 @@
                 ${formatTaka(dayTotal)}
               </span>
             </div>
-
-            <!-- Bottom Row: Entry Status -->
             <div class="mt-4 flex items-center justify-between text-xs font-bold text-takaGreen-800/75 dark:text-takaGreen-300/75">
               <span>
                 ${entriesCount > 0 
@@ -1658,7 +1601,6 @@
               </span>
               <i data-lucide="plus-circle" class="w-4 h-4 text-takaGreen-600 dark:text-takaGreen-400 group-hover:scale-110 transition-transform"></i>
             </div>
-
           </div>
         `;
       }
@@ -1666,7 +1608,6 @@
       daysGrid.innerHTML = html;
     }
 
-    // Render Day Amount Input Page (Allows adding daily Taka amounts & sums the total below)
     function renderDayInputPage() {
       const dict = I18N[state.lang];
       const monthName = dict.monthsNames[state.selectedMonth];
@@ -1716,7 +1657,6 @@
                   </span>
                 </div>
               </div>
-
               <div class="flex items-center gap-3">
                 <span class="text-lg sm:text-xl font-extrabold text-takaGreen-800 dark:text-takaGreen-300">
                   ${formatTaka(item.amount)}
@@ -1742,10 +1682,7 @@
         .replace(/'/g, '&#039;');
     }
 
-    // Expose controller globally for inline event handlers
     window.app = app;
-
-    // Boot application
     window.addEventListener('DOMContentLoaded', () => {
       app.init();
     });
